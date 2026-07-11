@@ -1,0 +1,4 @@
+web-server-01
+db-server-01
+firewall-01
+vpn-server-01
