@@ -1,4 +1,11 @@
 web-server-01
+web-server-02
+web-server-03
 db-server-01
-firewall-01
+db-server-02
 vpn-server-01
+mail-server-01
+web-server-01
+WEB-SERVER-02
+
+db-server-01
