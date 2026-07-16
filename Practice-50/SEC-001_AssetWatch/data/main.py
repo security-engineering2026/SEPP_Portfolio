@@ -58,6 +58,7 @@ print("SEC-001 AssetWatch")
 print("Version : v1.0")
 print("====================")
 print()
+# Future Improvement
 print("Requested Types :", ", ".join(requested_types))
 print()
 
