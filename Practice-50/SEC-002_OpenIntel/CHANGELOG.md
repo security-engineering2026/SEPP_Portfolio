@@ -1,18 +1,22 @@
-# SEC-002 OpenIntel
+# CHANGELOG
 
-## v1.0
+## SEC-002 OpenIntel v1.0
 
-### Features
-- Read input data
-- Normalize entities
+### Added
+
+- Read input data from file
+- Normalize input data
+- Remove empty lines
 - Remove duplicate entities
-- Classify entities
+- Classify entities into:
+  - Emails
+  - Domains
+  - Names
 - Generate statistics report
-- Search entities
-- Interactive search
+- Add search engine
+- Add interactive search capability
 
-### Next Version
-- Interactive menu
-- Function refactor
-- Export report
-- Validation rules
+### Notes
+
+- First stable release of SEC-002 OpenIntel.
+- Prepared foundation for future entity analysis.
