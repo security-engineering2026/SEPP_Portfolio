@@ -42,7 +42,7 @@ for u in clean_entities:
 
 print("========================")
 print("SEC-002 OpenIntel")
-print("Version : v0.1")
+print("Version : v1.0")
 print("========================")
 print()
 print("Data Statistics")
@@ -85,6 +85,12 @@ for name in names:
 # Search Engine
 # ============================
 
+print()
+print("========================")
+print("Search Engine")
+print("========================")
+print()
+
 query = input("Search > ")
 
 search_results = []
@@ -101,3 +107,8 @@ if search_results:
         print("-", item)
 else:
         print("No results found.")
+        
+print()
+print("========================")
+print("End of Report")
+print("========================")
