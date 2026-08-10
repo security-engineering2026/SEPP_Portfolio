@@ -1,0 +1,8 @@
+Priority Report
+---------------
+john@example.com : Low (10)
+example.com : Low (10)
+
+High Risk Findings
+------------------
+No high risk findings.

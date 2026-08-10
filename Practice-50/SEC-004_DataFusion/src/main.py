@@ -113,6 +113,16 @@ print("Relations :", len(relations))
 print("Nodes     :", len(nodes))
 print("Top Node  :", top_node)
 print()
+# -------------------------------------
+# Export Frequency
+# -------------------------------------
+
+with open("output/frequency.txt", "w") as file:
+
+    for node, count in node_frequency.items():
+
+        file.write(f"{node}:{count}\n")
+
 print("====================")
 print("End of Report")
 print("====================")
