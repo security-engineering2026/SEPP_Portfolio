@@ -4,6 +4,7 @@ from .inventory import inventory
 from .store import ForgeStore
 from .manifest import ManifestEngine, ManifestError
 from .requirements import RequirementEngine
+from .verifier import IndependentVerifier
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
@@ -15,6 +16,10 @@ class ForgeEngine:
         out=self.root/".forge/manifest.json"; out.write_text(json.dumps(result,indent=2),encoding="utf-8"); self.store.evidence("manifest",out,"TESTED"); self.store.event("manifest",result["manifest"]); return result
     def requirements(self):
         graph=RequirementEngine(self.root).persist(); self.store.evidence("requirements",self.root/".forge/requirements.json","OBSERVED"); self.store.event("requirements",{"count":len(graph["requirements"]),"manifest_sha256":graph["manifest_sha256"]}); return graph
+    def verify(self):
+        result=IndependentVerifier(self.root).verify()
+        self.store.event("independent_verification",{"state":result["state"],"verification_sha256":result["verification_sha256"]})
+        return result
     def health(self):
         gates={"manifest":(self.root/".forge/manifest.json").exists(),"persistence":(self.root/".forge/forge.db").exists(),"inventory":(self.root/".forge/inventory.json").exists(),"runtime":True,"independent_verification":False}
         state=None
@@ -22,6 +27,10 @@ class ForgeEngine:
             try: state=json.loads((self.root/".forge/manifest.json").read_text(encoding="utf-8"))["manifest"]["state"]
             except Exception: state="FAILED"
         gates["manifest"]=state=="VERIFIED"
+        vp=self.root/".forge/verification.json"
+        if vp.exists():
+            try: gates["independent_verification"]=json.loads(vp.read_text(encoding="utf-8")).get("state")=="VERIFIED"
+            except Exception: gates["independent_verification"]=False
         return {"truth_state":"TESTED","gates":gates,"release_ready":all(gates.values())}
     def self_test(self):
         self.store.meta("schema","1"); checks=[("persistence",self.store.meta("schema")=="1")]; inv=self.inspect(); checks.append(("inventory",inv["status"]=="OBSERVED")); man=self.manifest(); checks.append(("manifest",man["manifest"]["state"]=="VERIFIED")); graph=self.requirements(); checks.append(("requirements",len(graph["requirements"])>0)); checks.append(("runtime",True))
