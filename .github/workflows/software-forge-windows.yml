@@ -19,7 +19,8 @@ jobs:
           python-version: '3.12'
       - name: Install test tooling
         shell: pwsh
-        run: py -m pip install --upgrade pip
+        run: |
+          py -m pip install --upgrade pip
           py -m pip install -r requirements.txt
       - name: Forge self-test
         shell: pwsh
