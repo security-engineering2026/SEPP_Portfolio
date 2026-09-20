@@ -19,22 +19,23 @@ jobs:
           python-version: '3.12'
       - name: Install test tooling
         shell: pwsh
+        working-directory: Software_Forge
         run: |
-          py -m pip install --upgrade pip
-          py -m pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
       - name: Forge self-test
         shell: pwsh
         working-directory: Software_Forge
-        run: py -m forge self-test
+        run: python -m forge self-test
       - name: Forge unit tests
         shell: pwsh
         working-directory: Software_Forge
-        run: py -m pytest -q
+        run: python -m pytest -q
       - name: Live Windows runtime smoke
         shell: pwsh
         working-directory: Software_Forge
         run: |
-          $p = Start-Process py -ArgumentList '-m','forge','serve','--host','127.0.0.1','--port','8765' -PassThru -WindowStyle Hidden
+          $p = Start-Process python -ArgumentList '-m','forge','serve','--host','127.0.0.1','--port','8765' -PassThru -WindowStyle Hidden
           try {
             Start-Sleep -Seconds 2
             $r = Invoke-WebRequest http://127.0.0.1:8765/ -UseBasicParsing
@@ -47,13 +48,11 @@ jobs:
         shell: pwsh
         working-directory: Software_Forge
         run: |
-          py -m forge inventory | Out-File forge-inventory.json -Encoding utf8
+          python -m forge inventory | Out-File forge-inventory.json -Encoding utf8
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $health = py -m forge health
+          $health = python -m forge health
           $health_exit = $LASTEXITCODE
           $health | Out-File forge-health.json -Encoding utf8
-          # Exit code 2 means the health command correctly reports NOT RELEASE READY.
-          # That is evidence, not a workflow failure; unexpected codes remain failures.
           if ($health_exit -ne 0 -and $health_exit -ne 2) { exit $health_exit }
           exit 0
       - name: Upload evidence
