@@ -53,6 +53,7 @@ jobs:
           # Exit code 2 means the health command correctly reports NOT RELEASE READY.
           # That is evidence, not a workflow failure; unexpected codes remain failures.
           if ($health_exit -ne 0 -and $health_exit -ne 2) { exit $health_exit }
+          exit 0
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
