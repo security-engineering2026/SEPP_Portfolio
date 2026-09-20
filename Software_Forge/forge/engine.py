@@ -2,14 +2,27 @@ import json, os, platform, time
 from pathlib import Path
 from .inventory import inventory
 from .store import ForgeStore
+from .manifest import ManifestEngine, ManifestError
+from .requirements import RequirementEngine
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
     def inspect(self):
         data=inventory(self.root); data["environment"]=self.environment(); out=self.root/".forge/inventory.json"; out.write_text(json.dumps(data,indent=2),encoding="utf-8"); h=self.store.evidence("inventory",out); self.store.event("inventory",{"sha256":h}); return data
+    def manifest(self):
+        try: result=ManifestEngine(self.root).snapshot()
+        except ManifestError as exc: result={"manifest":{"state":"FAILED","errors":[str(exc)]},"requirements":{"count":0,"requirements":[]}}
+        out=self.root/".forge/manifest.json"; out.write_text(json.dumps(result,indent=2),encoding="utf-8"); self.store.evidence("manifest",out,"TESTED"); self.store.event("manifest",result["manifest"]); return result
+    def requirements(self):
+        graph=RequirementEngine(self.root).persist(); self.store.evidence("requirements",self.root/".forge/requirements.json","OBSERVED"); self.store.event("requirements",{"count":len(graph["requirements"]),"manifest_sha256":graph["manifest_sha256"]}); return graph
     def health(self):
-        gates={"manifest":False,"persistence":(self.root/".forge/forge.db").exists(),"inventory":(self.root/".forge/inventory.json").exists(),"runtime":True,"independent_verification":False}
-        gates["manifest"]=any((self.root/x).exists() for x in ["Software_Forge/SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.md","FORGE_MANIFEST.md"])
+        gates={"manifest":(self.root/".forge/manifest.json").exists(),"persistence":(self.root/".forge/forge.db").exists(),"inventory":(self.root/".forge/inventory.json").exists(),"runtime":True,"independent_verification":False}
+        state=None
+        if gates["manifest"]:
+            try: state=json.loads((self.root/".forge/manifest.json").read_text(encoding="utf-8"))["manifest"]["state"]
+            except Exception: state="FAILED"
+        gates["manifest"]=state=="VERIFIED"
         return {"truth_state":"TESTED","gates":gates,"release_ready":all(gates.values())}
     def self_test(self):
-        self.store.meta("schema","1"); checks=[("persistence",self.store.meta("schema")=="1")]; inv=self.inspect(); checks.append(("inventory",inv["status"]=="OBSERVED")); checks.append(("runtime",True)); p=self.root/".forge/self_test.json"; p.write_text(json.dumps({"checks":checks,"environment":self.environment()},indent=2),encoding="utf-8"); self.store.evidence("self_test",p,"TESTED"); ok=all(v for _,v in checks); self.store.event("self_test",{"checks":checks,"result":"PASS" if ok else "FAIL"}); return ok,checks
+        self.store.meta("schema","1"); checks=[("persistence",self.store.meta("schema")=="1")]; inv=self.inspect(); checks.append(("inventory",inv["status"]=="OBSERVED")); man=self.manifest(); checks.append(("manifest",man["manifest"]["state"]=="VERIFIED")); graph=self.requirements(); checks.append(("requirements",len(graph["requirements"])>0)); checks.append(("runtime",True))
+        p=self.root/".forge/self_test.json"; p.write_text(json.dumps({"checks":checks,"environment":self.environment()},indent=2),encoding="utf-8"); self.store.evidence("self_test",p,"TESTED"); ok=all(v for _,v in checks); self.store.event("self_test",{"checks":checks,"result":"PASS" if ok else "FAIL"}); return ok,checks
