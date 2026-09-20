@@ -14,3 +14,16 @@ class ForgeStore:
         raw=json.dumps(payload,sort_keys=True).encode(); prev=self.db.execute("SELECT sha256 FROM events ORDER BY id DESC LIMIT 1").fetchone(); h=digest((prev[0] if prev else "").encode()+raw); self.db.execute("INSERT INTO events(ts,kind,payload,sha256) VALUES(?,?,?,?)",(time.time(),kind,raw.decode(),h)); self.db.commit(); return h
     def evidence(self,kind,path,state="OBSERVED"):
         p=Path(path); h=digest(p.read_bytes()); self.db.execute("INSERT INTO evidence(ts,kind,path,sha256,state) VALUES(?,?,?,?,?)",(time.time(),kind,str(p),h,state)); self.db.commit(); return h
+    def verify_event_chain(self):
+        rows=self.db.execute("SELECT id,kind,payload,sha256 FROM events ORDER BY id").fetchall()
+        previous=""
+        for eid,kind,payload,stored in rows:
+            try:
+                raw=json.dumps(json.loads(payload),sort_keys=True).encode()
+            except Exception:
+                return {"state":"FAILED","events":len(rows),"broken_event_id":eid}
+            expected=digest(previous.encode()+raw)
+            if expected != stored:
+                return {"state":"FAILED","events":len(rows),"broken_event_id":eid,"expected":expected,"observed":stored}
+            previous=stored
+        return {"state":"VERIFIED","events":len(rows)}
