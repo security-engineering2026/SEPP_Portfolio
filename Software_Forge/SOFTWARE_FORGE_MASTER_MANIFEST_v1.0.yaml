@@ -1,0 +1,99 @@
+forge_manifest_version: "1.0"
+
+product:
+  id: software-forge
+  name: Software Forge
+  type: software_lifecycle_control_plane
+  version: "1.0.0"
+
+intent:
+  description: >
+    Software Lifecycle Control Plane / Product Lifecycle Orchestrator that
+    builds new software, independently repairs imported software, evolves
+    existing products, executes real validation, repairs failures, preserves
+    project knowledge, and releases only with evidence and independent verification.
+
+modes:
+  - build_new
+  - repair_imported
+  - evolve_existing
+
+core_principles:
+  user_intent_preservation: required
+  evidence_over_claims: required
+  independent_verification: required
+  no_artificial_iteration_limit: true
+  persistent_project_memory: required
+  portable_project_knowledge: required
+  provider_independence: required
+  target_native_execution: required
+  autonomous_repair: required
+  hardware_environment_diagnosis: required
+
+resolution:
+  internet_research: allowed
+  official_documentation: allowed
+  ai_provider_fallback: required
+  alternative_toolchain: allowed
+  sandbox_experiment: required
+  hardware_diagnosis: required
+  workaround_generation: required
+
+persistence:
+  project_memory: required
+  evidence_store: required
+  failure_history: required
+  decision_history: required
+  environment_history: required
+  manifest_history: required
+  knowledge_export: required
+  knowledge_import: required
+  resumable_execution: required
+
+network:
+  modes:
+    - direct
+    - vpn
+    - proxy
+    - restricted
+    - offline
+  fallback_enabled: true
+
+validation:
+  unit: required
+  integration: required
+  runtime: required
+  ui: required
+  security: required
+  red_team: required
+  blue_team: required
+  regression: required
+  independent_verification: required
+
+release:
+  evidence_required: true
+  clean_install_required: true
+  clean_uninstall_required: true
+  artifact_integrity_required: true
+
+autonomy:
+  max_level: 3
+
+resource_policy:
+  iteration_cap: null
+  cpu: configurable
+  memory: configurable
+  disk: configurable
+  wall_time: configurable
+  api_cost: configurable
+  network: configurable
+  human_approval: configurable
+
+truth_states:
+  - unknown
+  - claimed
+  - observed
+  - tested
+  - verified
+  - passed
+  - released
