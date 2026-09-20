@@ -1,0 +1,56 @@
+name: Software Forge - Windows Live Validation
+on:
+  push:
+    paths:
+      - 'Software_Forge/**'
+      - '.github/workflows/software-forge-windows.yml'
+  workflow_dispatch:
+jobs:
+  windows-live:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test tooling
+        shell: pwsh
+        run: py -m pip install --upgrade pip pytest
+      - name: Forge self-test
+        shell: pwsh
+        working-directory: Software_Forge
+        run: py -m forge self-test
+      - name: Forge unit tests
+        shell: pwsh
+        working-directory: Software_Forge
+        run: py -m pytest -q
+      - name: Live Windows runtime smoke
+        shell: pwsh
+        working-directory: Software_Forge
+        run: |
+          $p = Start-Process py -ArgumentList '-m','forge','serve','--host','127.0.0.1','--port','8765' -PassThru -WindowStyle Hidden
+          try {
+            Start-Sleep -Seconds 2
+            $r = Invoke-WebRequest http://127.0.0.1:8765/ -UseBasicParsing
+            if ($r.StatusCode -ne 200) { throw "HTTP status $($r.StatusCode)" }
+            $r.Content | Out-File forge-live-runtime.json -Encoding utf8
+            Get-Content forge-live-runtime.json
+          } finally { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+      - name: Collect evidence
+        if: always()
+        shell: pwsh
+        working-directory: Software_Forge
+        run: |
+          py -m forge inventory | Out-File forge-inventory.json -Encoding utf8
+          py -m forge health | Out-File forge-health.json -Encoding utf8
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: software-forge-windows-evidence
+          path: |
+            Software_Forge/forge-*.json
+            Software_Forge/.forge/**
