@@ -33,3 +33,15 @@ def test_verifier_detects_tampered_evidence(tmp_path):
     copy_manifest(tmp_path); e=ForgeEngine(tmp_path); e.inspect(); e.manifest(); e.requirements()
     p=tmp_path/".forge/inventory.json"; p.write_text(p.read_text(encoding="utf-8")+"tamper",encoding="utf-8")
     assert e.verify()["state"]=="FAILED"
+
+
+def test_verifier_detects_tampered_event_chain(tmp_path):
+    copy_manifest(tmp_path); e=ForgeEngine(tmp_path); e.inspect(); e.manifest(); e.requirements()
+    db=tmp_path/".forge/forge.db"
+    import sqlite3
+    con=sqlite3.connect(db)
+    con.execute("UPDATE events SET payload=? WHERE id=(SELECT MIN(id) FROM events)", ('{"tampered":true}',))
+    con.commit(); con.close()
+    result=e.verify()
+    assert result["state"]=="FAILED"
+    assert any(c["check"]=="event_chain_integrity" and not c["passed"] for c in result["checks"])
