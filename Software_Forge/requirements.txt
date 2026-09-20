@@ -1,1 +1,2 @@
-# Standard library runtime; pytest is required only for development validation.
+PyYAML>=6.0,<7
+pytest>=8,<9
