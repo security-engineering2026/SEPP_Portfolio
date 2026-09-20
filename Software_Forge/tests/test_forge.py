@@ -45,3 +45,15 @@ def test_verifier_detects_tampered_event_chain(tmp_path):
     result=e.verify()
     assert result["state"]=="FAILED"
     assert any(c["check"]=="event_chain_integrity" and not c["passed"] for c in result["checks"])
+
+
+def test_build_engine_passes_source_compilation(tmp_path):
+    copy_manifest(tmp_path); (tmp_path/"valid.py").write_text("value = 1\n", encoding="utf-8")
+    result=ForgeEngine(tmp_path).build()
+    assert result["state"]=="PASSED" and result["compiled_files"] >= 1
+
+def test_build_engine_detects_syntax_failure(tmp_path):
+    copy_manifest(tmp_path); (tmp_path/"broken.py").write_text("def broken(:\n", encoding="utf-8")
+    result=ForgeEngine(tmp_path).build()
+    assert result["state"]=="FAILED"
+    assert any("broken.py" in x["path"] for x in result["errors"])
