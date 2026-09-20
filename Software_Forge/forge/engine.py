@@ -5,6 +5,7 @@ from .store import ForgeStore
 from .manifest import ManifestEngine, ManifestError
 from .requirements import RequirementEngine
 from .verifier import IndependentVerifier
+from .build import BuildEngine
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
@@ -16,6 +17,11 @@ class ForgeEngine:
         out=self.root/".forge/manifest.json"; out.write_text(json.dumps(result,indent=2),encoding="utf-8"); self.store.evidence("manifest",out,"TESTED"); self.store.event("manifest",result["manifest"]); return result
     def requirements(self):
         graph=RequirementEngine(self.root).persist(); self.store.evidence("requirements",self.root/".forge/requirements.json","OBSERVED"); self.store.event("requirements",{"count":len(graph["requirements"]),"manifest_sha256":graph["manifest_sha256"]}); return graph
+    def build(self):
+        result=BuildEngine(self.root).build()
+        self.store.evidence("build",self.root/".forge/build.json","TESTED")
+        self.store.event("build",{"state":result["state"],"compiled_files":result["compiled_files"]})
+        return result
     def verify(self):
         result=IndependentVerifier(self.root).verify()
         self.store.event("independent_verification",{"state":result["state"],"verification_sha256":result["verification_sha256"]})
