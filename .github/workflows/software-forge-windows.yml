@@ -1,5 +1,6 @@
 name: Software Forge - Windows Live Validation
 on:
+  pull_request:
   push:
     paths:
       - 'Software_Forge/**'
