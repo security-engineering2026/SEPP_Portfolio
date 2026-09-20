@@ -27,6 +27,10 @@ jobs:
         shell: pwsh
         working-directory: Software_Forge
         run: python -m forge self-test
+      - name: Forge build validation
+        shell: pwsh
+        working-directory: Software_Forge
+        run: python -m forge build
       - name: Forge unit tests
         shell: pwsh
         working-directory: Software_Forge
