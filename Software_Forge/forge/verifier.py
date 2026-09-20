@@ -14,11 +14,14 @@ class IndependentVerifier:
 
     def verify(self) -> dict:
         checks = []
-        manifest_path = next((p for p in (
+        manifest_candidates = (
             self.root / "SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.yaml",
             self.root / "FORGE_MANIFEST.yaml",
+            self.root / "Software_Forge" / "SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.yaml",
+            self.root / "Software_Forge" / "FORGE_MANIFEST.yaml",
             self.root.parent / "SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.yaml",
-        ) if p.exists()), None)
+        )
+        manifest_path = next((p for p in manifest_candidates if p.exists()), None)
         if manifest_path is None:
             checks.append({"check":"manifest_present","passed":False,"reason":"manifest not found"})
             return self._write(checks, "BLOCKED")
