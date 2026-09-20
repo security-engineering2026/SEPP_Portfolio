@@ -2,6 +2,7 @@ from __future__ import annotations
 import hashlib, json, sqlite3
 from pathlib import Path
 from .manifest import ManifestEngine
+from .store import ForgeStore
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -45,6 +46,9 @@ class IndependentVerifier:
                 checks.append({"check":"requirement_set_binding","passed":expected_ids == observed_ids})
             except Exception as exc:
                 checks.append({"check":"requirements_integrity","passed":False,"reason":str(exc)})
+
+        chain = ForgeStore(self.root).verify_event_chain()
+        checks.append({"check":"event_chain_integrity","passed":chain["state"] == "VERIFIED","details":chain})
 
         evidence_ok = True
         db = self.forge / "forge.db"
