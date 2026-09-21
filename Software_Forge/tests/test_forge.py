@@ -93,3 +93,32 @@ def test_failure_analyzer_no_failure_is_explicit(tmp_path):
     result=ForgeEngine(tmp_path).analyze_failure({"state":"PASSED","exit_code":0})
     assert result["state"]=="NO_FAILURE"
     assert result["category"] is None
+
+def test_failure_analyzer_unknown_without_root_cause(tmp_path):
+    copy_manifest(tmp_path)
+    result=ForgeEngine(tmp_path).analyze_failure({"state":"FAILED","error":"something went wrong"})
+    assert result["state"]=="ANALYZED"
+    assert result["category"]=="UNKNOWN"
+    assert result["confidence"]=="LOW"
+    assert result["failure_id"]
+
+def test_failure_analyzer_nonzero_exit_is_software_low_confidence(tmp_path):
+    copy_manifest(tmp_path)
+    result=ForgeEngine(tmp_path).analyze_failure({"state":"FAILED","exit_code":7})
+    assert result["category"]=="SOFTWARE"
+    assert result["confidence"]=="LOW"
+
+def test_failure_analyzer_network_provider_hardware_signals(tmp_path):
+    copy_manifest(tmp_path)
+    e=ForgeEngine(tmp_path)
+    assert e.analyze_failure({"state":"FAILED","stderr":"DNS lookup failed"})["category"]=="NETWORK"
+    assert e.analyze_failure({"state":"FAILED","stderr":"HTTP 429 RATE LIMIT"})["category"]=="PROVIDER"
+    assert e.analyze_failure({"state":"FAILED","stderr":"NO SPACE LEFT ON DEVICE"})["category"]=="HARDWARE"
+
+def test_failure_analyzer_binds_evidence_refs(tmp_path):
+    copy_manifest(tmp_path)
+    result=ForgeEngine(tmp_path).analyze_failure({
+        "state":"FAILED","error":"OS_ERROR: launch",
+        "execution_id":"exec-123","evidence_sha256":"abc123"
+    })
+    assert {x["field"] for x in result["evidence_refs"]}=={"execution_id","evidence_sha256"}
