@@ -5,7 +5,7 @@ from forge.engine import ForgeEngine
 from forge.manifest import ManifestEngine
 
 def copy_manifest(tmp_path):
-    src=Path(__file__).parents[1]/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml"
+    src=Path(__file__).parents[1]/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.3.yaml"
     dst=tmp_path/"Software_Forge"; dst.mkdir(); (dst/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml").write_text(src.read_text(encoding="utf-8"),encoding="utf-8")
 
 def test_persistence_and_self_test(tmp_path):
@@ -264,11 +264,11 @@ def test_repair_rejects_protected_paths(tmp_path):
         assert False, "repair must reject protected state"
 
 
-def test_manifest_v12_offline_contract_is_verified(tmp_path):
+def test_manifest_v13_offline_and_evolution_contract_is_verified(tmp_path):
     copy_manifest(tmp_path)
     result=ManifestEngine(tmp_path).snapshot()
     assert result["manifest"]["state"]=="VERIFIED", result["manifest"]["errors"]
-    assert result["requirements"]["count"] >= 40
+    assert result["requirements"]["count"] >= 50
 
 
 def test_offline_readiness_creates_local_capability_inventory(tmp_path):
@@ -303,3 +303,65 @@ def test_product_search_builds_large_deduplicated_pool(tmp_path):
     assert result["unique_count"]>=100
     assert result["unique_count"]==len(result["candidates"])
     assert result["minimum_met"] is True
+
+
+def test_manifest_evolution_proposal_is_non_mutating(tmp_path):
+    copy_manifest(tmp_path)
+    from forge.manifest_evolution import ManifestEvolutionEngine
+    e=ManifestEvolutionEngine(tmp_path)
+    before=e._file_sha(e.manifest_path)
+    proposal=e.propose(
+        "Add an explicit offline knowledge cache requirement.",
+        [{"op":"ADD","path":"offline.knowledge_graph_cache","value":"required"}],
+        reason="speed and offline continuity",
+    )
+    assert proposal["approval_state"]=="PENDING"
+    assert proposal["proposed_version"]=="1.4"
+    assert e._file_sha(e.manifest_path)==before
+    assert proposal["impact"]["regression_required"] is True
+    assert proposal["changes"]
+
+def test_manifest_evolution_requires_exact_approval_and_applies_versioned_change(tmp_path):
+    copy_manifest(tmp_path)
+    from forge.manifest_evolution import ManifestEvolutionEngine
+    e=ManifestEvolutionEngine(tmp_path)
+    proposal=e.propose(
+        "Add local artifact index.",
+        [{"op":"ADD","path":"offline.local_artifact_index","value":"required"}],
+    )
+    try:
+        e.approve_and_apply(proposal["proposal_id"],"wrong-token")
+    except ValueError as exc:
+        assert "approval token" in str(exc)
+    else:
+        assert False, "wrong approval must be rejected"
+    applied=e.approve_and_apply(proposal["proposal_id"],proposal["approval_token"])
+    assert applied["approval_state"]=="APPROVED_APPLIED"
+    assert applied["result_manifest_sha256"]
+    assert Path(applied["result_manifest"]).exists()
+    latest=ManifestEngine(tmp_path).snapshot()
+    assert latest["manifest"]["state"]=="VERIFIED", latest["manifest"]["errors"]
+    assert latest["manifest"]["path"].endswith("v1.4.yaml")
+    ledger=json.loads((tmp_path/".forge/approval_ledger.json").read_text(encoding="utf-8"))
+    assert ledger[-1]["proposal_id"]==proposal["proposal_id"]
+
+def test_manifest_evolution_rejects_stale_manifest(tmp_path):
+    copy_manifest(tmp_path)
+    from forge.manifest_evolution import ManifestEvolutionEngine
+    e=ManifestEvolutionEngine(tmp_path)
+    proposal=e.propose("Add a cache.", [{"op":"ADD","path":"offline.extra_cache","value":"required"}])
+    e.manifest_path.write_text(e.manifest_path.read_text(encoding="utf-8")+"\n",encoding="utf-8")
+    try:
+        e.approve_and_apply(proposal["proposal_id"],proposal["approval_token"])
+    except ValueError as exc:
+        assert "changed since proposal" in str(exc)
+    else:
+        assert False, "stale manifest must be rejected"
+
+def test_manifest_evolution_removal_requires_explicit_approval(tmp_path):
+    copy_manifest(tmp_path)
+    from forge.manifest_evolution import ManifestEvolutionEngine
+    e=ManifestEvolutionEngine(tmp_path)
+    proposal=e.propose("Remove a requirement explicitly.", [{"op":"REMOVE","path":"offline.model_cache"}])
+    assert any(c["op"]=="REMOVE" for c in proposal["changes"])
+    assert proposal["approval_required"] is True
