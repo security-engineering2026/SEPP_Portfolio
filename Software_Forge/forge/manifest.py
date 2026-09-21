@@ -15,8 +15,8 @@ class ManifestEngine:
 
     def _find_manifest(self):
         for p in [
-            self.root/"Software_Forge/SOFTWARE_FORGE_MASTER_MANIFEST_v1.1.yaml",
-            self.root/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.1.yaml",
+            self.root/"Software_Forge/SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml",
+            self.root/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml",
             self.root/"FORGE_MANIFEST.yaml",
         ]:
             if p.exists():
@@ -35,7 +35,7 @@ class ManifestEngine:
         errors=[]
         if missing:
             errors.append("missing_top_level:"+",".join(missing))
-        if data.get("forge_manifest_version")!="1.1":
+        if data.get("forge_manifest_version")!="1.2":
             errors.append("unsupported_manifest_version")
         product=data.get("product")
         if not isinstance(product,dict) or not product.get("id") or not product.get("name"):
@@ -52,10 +52,25 @@ class ManifestEngine:
             "capability_extraction","workflow_pattern_analysis","ux_pattern_analysis",
             "evidence_backed_comparison","provenance_tracking","gap_analysis",
             "improvement_candidate_generation","requirement_traceability","impact_analysis",
-            "approval_before_contract_change","implementation_without_approval","outputs","lifecycle",
+            "approval_before_contract_change","implementation_without_approval","outputs","lifecycle","discovery","analysis","offline",
         }
         if not isinstance(product_intelligence,dict) or not required_product_intelligence.issubset(product_intelligence):
             errors.append("product_intelligence_contract_incomplete")
+        discovery=product_intelligence.get("discovery") if isinstance(product_intelligence,dict) else None
+        required_discovery={"search_engine","search_planner","query_generation","query_expansion","multi_source_search","semantic_search","category_search","capability_search","workflow_search","ux_search","source_registry","candidate_pooling","large_candidate_pool","deduplication","relevance_filtering","adaptive_search_depth","saturation_detection","minimum_candidate_policy","deep_analysis_threshold","no_fixed_top_n_cap","search_cache","local_search_index","research_scheduler"}
+        if not isinstance(discovery,dict) or not required_discovery.issubset(discovery): errors.append("product_intelligence_discovery_contract_incomplete")
+        analysis=product_intelligence.get("analysis") if isinstance(product_intelligence,dict) else None
+        required_analysis={"batch_analysis","comparative_analysis","capability_matrix","workflow_matrix","ux_pattern_matrix","evidence_scoring","provenance","pattern_synthesis","result_confidence","discovery_to_analysis_traceability"}
+        if not isinstance(analysis,dict) or not required_analysis.issubset(analysis): errors.append("product_intelligence_analysis_contract_incomplete")
+        pi_offline=product_intelligence.get("offline") if isinstance(product_intelligence,dict) else None
+        required_pi_offline={"local_index","local_knowledge_store","knowledge_pack_import","knowledge_pack_export","local_search","local_comparison","local_pattern_analysis","local_gap_analysis","incremental_online_sync","evidence_refresh_on_reconnect","external_discovery_when_offline"}
+        if not isinstance(pi_offline,dict) or not required_pi_offline.issubset(pi_offline): errors.append("product_intelligence_offline_contract_incomplete")
+        offline=data.get("offline")
+        required_offline={"local_build","local_test","local_static_analysis","local_runtime","local_evidence","local_git","local_recovery","local_failure_diagnosis","local_repair","local_regression","local_independent_verification","local_product_intelligence","local_search_index","knowledge_pack_import","knowledge_pack_export","dependency_cache","toolchain_cache","documentation_cache","package_registry_cache","platform_image_cache","offline_external_discovery"}
+        if not isinstance(offline,dict) or not required_offline.issubset(offline): errors.append("offline_capability_contract_incomplete")
+        pre=data.get("online_preprovisioning")
+        required_pre={"readiness_scan","dependency_inventory","toolchain_inventory","required_runtime_inventory","required_sdk_inventory","package_cache_warmup","browser_runtime_warmup","platform_image_warmup","documentation_cache_warmup","knowledge_pack_warmup","offline_readiness_score","missing_capability_report","scheduled_refresh","integrity_verification","resumable_downloads","content_addressed_storage","version_pinning","license_policy_check","storage_budget"}
+        if not isinstance(pre,dict) or not required_pre.issubset(pre): errors.append("online_preprovisioning_contract_incomplete")
         if not isinstance(data.get("release"),dict):
             errors.append("release_policy_required")
         if data.get("truth_states")!=["unknown","claimed","observed","tested","verified","passed","released"]:
