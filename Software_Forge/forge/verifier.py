@@ -11,6 +11,13 @@ def _execution_id(data: dict) -> str:
     payload = {k: v for k, v in data.items() if k != "execution_id"}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
+def _failure_attempt_details_sha256(details: str) -> str:
+    try:
+        canonical = json.dumps(json.loads(details), sort_keys=True, separators=(",", ":"))
+    except Exception:
+        canonical = details
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
 class IndependentVerifier:
     """Recomputes verification from source and persisted evidence; builder self-test is not authority."""
     def __init__(self, root: Path):
@@ -61,6 +68,8 @@ class IndependentVerifier:
             try:
                 rows = con.execute("SELECT id,kind,path,sha256 FROM evidence ORDER BY id").fetchall()
                 events = con.execute("SELECT payload FROM events WHERE kind='execution' ORDER BY id").fetchall()
+                attempt_rows = con.execute("SELECT id,failure_id,strategy,status,details FROM failure_attempts ORDER BY id").fetchall()
+                attempt_events = con.execute("SELECT payload FROM events WHERE kind='failure_attempt' ORDER BY id").fetchall()
             finally:
                 con.close()
             execution_bindings = []
@@ -88,6 +97,19 @@ class IndependentVerifier:
                     except Exception as exc:
                         evidence_ok=False
                         checks.append({"check":f"execution_{eid}_binding","passed":False,"reason":str(exc)})
+            event_map = {}
+            for payload in attempt_events:
+                try:
+                    item=json.loads(payload); event_map[item.get("attempt_id")]=item
+                except Exception:
+                    pass
+            for aid, failure_id, strategy, status, details in attempt_rows:
+                details_hash = _failure_attempt_details_sha256(details)
+                event = event_map.get(aid)
+                ok = bool(event and event.get("failure_id")==failure_id and event.get("strategy")==strategy and event.get("status")==status and event.get("details_sha256")==details_hash)
+                checks.append({"check":f"failure_attempt_{aid}_binding","passed":ok,"details_sha256":details_hash})
+                evidence_ok = evidence_ok and ok
+            checks.append({"check":"failure_attempt_ledger_integrity","passed":all(c["passed"] for c in checks if c["check"].startswith("failure_attempt_"))})
         checks.append({"check":"evidence_integrity","passed":evidence_ok})
         state = "VERIFIED" if checks and all(c["passed"] for c in checks) else "FAILED"
         return self._write(checks, state)
