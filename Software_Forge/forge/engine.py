@@ -21,7 +21,10 @@ class ForgeEngine:
     def build(self):
         result=BuildEngine(self.root).build(); self.store.evidence("build",self.root/".forge/build.json","TESTED"); self.store.event("build",{"state":result["state"],"compiled_files":result["compiled_files"]}); return result
     def execute(self,command,timeout_seconds=30.0,cwd=None):
-        result=ExecutionEngine(self.root).run(command,timeout_seconds,cwd); self.store.evidence("execution",self.root/".forge/execution.json","TESTED"); self.store.event("execution",{"state":result["state"],"exit_code":result["exit_code"],"error":result["error"]}); return result
+        result=ExecutionEngine(self.root).run(command,timeout_seconds,cwd)
+        evidence_hash=self.store.evidence("execution",self.root/".forge/execution.json","TESTED")
+        self.store.event("execution",{"execution_id":result["execution_id"],"state":result["state"],"exit_code":result["exit_code"],"error":result["error"],"evidence_sha256":evidence_hash})
+        return result
     def verify(self):
         result=IndependentVerifier(self.root).verify(); self.store.event("independent_verification",{"state":result["state"],"verification_sha256":result["verification_sha256"]}); return result
     def health(self):
