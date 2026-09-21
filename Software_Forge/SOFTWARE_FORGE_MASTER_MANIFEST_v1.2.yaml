@@ -1,0 +1,241 @@
+forge_manifest_version: "1.2"
+
+product:
+  id: software-forge
+  name: Software Forge
+  type: software_lifecycle_control_plane
+  version: "1.2.0"
+
+intent:
+  description: >
+    Software Lifecycle Control Plane / Product Lifecycle Orchestrator that
+    builds new software, independently repairs imported software, evolves
+    existing products, performs large-scale evidence-backed product
+    intelligence discovery and analysis, operates offline using pre-provisioned
+    local capabilities and knowledge, executes real validation, repairs
+    failures, preserves project knowledge, and releases only with evidence and
+    independent verification.
+
+modes:
+  - build_new
+  - repair_imported
+  - evolve_existing
+
+core_principles:
+  user_intent_preservation: required
+  evidence_over_claims: required
+  independent_verification: required
+  no_artificial_iteration_limit: true
+  persistent_project_memory: required
+  portable_project_knowledge: required
+  provider_independence: required
+  target_native_execution: required
+  autonomous_repair: required
+  hardware_environment_diagnosis: required
+  pattern_borrowing_not_assumption: required
+  offline_first_capability: required
+  online_preprovisioning: required
+  no_artificial_search_result_limit: required
+
+resolution:
+  internet_research: allowed
+  official_documentation: allowed
+  external_product_research: allowed
+  ai_provider_fallback: required
+  alternative_toolchain: allowed
+  sandbox_experiment: required
+  hardware_diagnosis: required
+  workaround_generation: required
+  offline_local_resolution: required
+
+persistence:
+  project_memory: required
+  evidence_store: required
+  failure_history: required
+  decision_history: required
+  environment_history: required
+  manifest_history: required
+  knowledge_export: required
+  knowledge_import: required
+  resumable_execution: required
+  product_intelligence_history: required
+  dependency_inventory: required
+  toolchain_inventory: required
+  offline_readiness_inventory: required
+
+network:
+  modes:
+    - direct
+    - vpn
+    - proxy
+    - restricted
+    - offline
+  fallback_enabled: true
+  online_to_offline_transition: required
+  offline_to_online_recovery: required
+
+product_intelligence:
+  enabled: true
+  external_product_discovery: required
+  similar_product_analysis: required
+  capability_extraction: required
+  workflow_pattern_analysis: required
+  ux_pattern_analysis: required
+  architecture_pattern_analysis: allowed
+  evidence_backed_comparison: required
+  provenance_tracking: required
+  gap_analysis: required
+  improvement_candidate_generation: required
+  requirement_traceability: required
+  impact_analysis: required
+  approval_before_contract_change: required
+  implementation_without_approval: false
+  discovery:
+    search_engine: required
+    search_planner: required
+    query_generation: required
+    query_expansion: required
+    multi_source_search: required
+    semantic_search: required
+    category_search: required
+    capability_search: required
+    workflow_search: required
+    ux_search: required
+    architecture_search: allowed
+    source_registry: required
+    candidate_pooling: required
+    large_candidate_pool: required
+    deduplication: required
+    relevance_filtering: required
+    adaptive_search_depth: required
+    saturation_detection: required
+    minimum_candidate_policy: configurable
+    deep_analysis_threshold: configurable
+    no_fixed_top_n_cap: required
+    search_cache: required
+    local_search_index: required
+    research_scheduler: required
+  analysis:
+    batch_analysis: required
+    comparative_analysis: required
+    capability_matrix: required
+    workflow_matrix: required
+    ux_pattern_matrix: required
+    evidence_scoring: required
+    provenance: required
+    pattern_synthesis: required
+    result_confidence: required
+    discovery_to_analysis_traceability: required
+  offline:
+    local_index: required
+    local_knowledge_store: required
+    knowledge_pack_import: required
+    knowledge_pack_export: required
+    local_search: required
+    local_comparison: required
+    local_pattern_analysis: required
+    local_gap_analysis: required
+    incremental_online_sync: required
+    evidence_refresh_on_reconnect: required
+    external_discovery_when_offline: limited_to_local_sources
+
+offline:
+  core_engineering:
+    enabled: required
+  local_build: required
+  local_test: required
+  local_static_analysis: required
+  local_runtime: required
+  local_ui_validation: required
+  local_security_analysis: required
+  local_red_team: required
+  local_blue_team: required
+  local_evidence: required
+  local_git: required
+  local_recovery: required
+  local_failure_diagnosis: required
+  local_repair: required
+  local_regression: required
+  local_independent_verification: required
+  local_product_intelligence: required
+  local_search_index: required
+  knowledge_pack_import: required
+  knowledge_pack_export: required
+  dependency_cache: required
+  toolchain_cache: required
+  model_cache: configurable
+  documentation_cache: required
+  package_registry_cache: required
+  platform_image_cache: required
+  browser_runtime_cache: required
+  android_sdk_cache: configurable
+  emulator_image_cache: configurable
+  offline_external_discovery: limited_to_local_sources
+
+online_preprovisioning:
+  readiness_scan: required
+  dependency_inventory: required
+  toolchain_inventory: required
+  required_runtime_inventory: required
+  required_sdk_inventory: required
+  package_cache_warmup: required
+  browser_runtime_warmup: required
+  platform_image_warmup: required
+  documentation_cache_warmup: required
+  knowledge_pack_warmup: required
+  model_cache_warmup: configurable
+  offline_readiness_score: required
+  missing_capability_report: required
+  scheduled_refresh: required
+  integrity_verification: required
+  resumable_downloads: required
+  content_addressed_storage: required
+  version_pinning: required
+  license_policy_check: required
+  storage_budget: configurable
+
+validation:
+  unit: required
+  integration: required
+  runtime: required
+  ui: required
+  security: required
+  red_team: required
+  blue_team: required
+  regression: required
+  independent_verification: required
+  product_intelligence: required
+  offline_readiness: required
+  offline_execution: required
+  online_to_offline_transition: required
+  offline_to_online_recovery: required
+
+release:
+  evidence_required: true
+  clean_install_required: true
+  clean_uninstall_required: true
+  artifact_integrity_required: true
+  offline_capability_manifest_required: true
+  dependency_provenance_required: true
+
+autonomy:
+  max_level: 3
+
+resource_policy:
+  iteration_cap: null
+  cpu: configurable
+  memory: configurable
+  disk: configurable
+  wall_time: configurable
+  api_cost: configurable
+  network: configurable
+  human_approval: configurable
+
+truth_states:
+  - unknown
+  - claimed
+  - observed
+  - tested
+  - verified
+  - passed
+  - released
