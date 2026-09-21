@@ -8,6 +8,7 @@ from .verifier import IndependentVerifier
 from .build import BuildEngine
 from .execution import ExecutionEngine
 from .failure import FailureAnalyzer
+from .checkpoint import CheckpointEngine
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
@@ -33,6 +34,16 @@ class ForgeEngine:
                 req["verification"]="OBSERVED"
             req_path.write_text(json.dumps(graph,indent=2),encoding="utf-8")
             self.store.evidence("requirements_lineage",req_path,"TESTED")
+        return result
+    def checkpoint(self, label="checkpoint"):
+        result=CheckpointEngine(self.root).create(label)
+        record_path=self.root/".forge/checkpoints"/result["checkpoint_id"]/"checkpoint.json"
+        h=self.store.evidence("checkpoint",record_path,"TESTED")
+        self.store.event("checkpoint",{"checkpoint_id":result["checkpoint_id"],"tree_sha256":result["tree_sha256"],"evidence_sha256":h})
+        return result
+    def restore_checkpoint(self, checkpoint_id):
+        result=CheckpointEngine(self.root).restore(checkpoint_id)
+        self.store.event("checkpoint_restore",result)
         return result
     def analyze_failure(self, observation):
         result=FailureAnalyzer(self.root).analyze(observation)
