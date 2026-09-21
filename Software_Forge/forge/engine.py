@@ -11,11 +11,17 @@ from .failure import FailureAnalyzer
 from .checkpoint import CheckpointEngine
 from .repair import RepairEngine
 from .manifest_evolution import ManifestEvolutionEngine
+from .impact import ChangeImpactEngine
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
     def inspect(self):
         data=inventory(self.root); data["environment"]=self.environment(); out=self.root/".forge/inventory.json"; out.write_text(json.dumps(data,indent=2),encoding="utf-8"); h=self.store.evidence("inventory",out); self.store.event("inventory",{"sha256":h}); return data
+    def impact(self, changed_paths, manifest_paths=None):
+        result=ChangeImpactEngine(self.root).analyze(changed_paths, manifest_paths)
+        self.store.evidence("impact",self.root/".forge/impact.json","OBSERVED")
+        self.store.event("impact",result)
+        return result
     def manifest_evolution(self):
         return ManifestEvolutionEngine(self.root)
     def manifest(self):
