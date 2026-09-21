@@ -59,6 +59,15 @@ class RepairEngine:
         return originals
 
     def apply(self, files, strategy="candidate_patch", build=True):
+        # Validate the candidate before opening a transaction; policy violations are rejected, not rolled back.
+        if not isinstance(files, list) or not files:
+            raise RepairError("patch files must be a non-empty list")
+        for item in files:
+            if not isinstance(item, dict) or "path" not in item or "content" not in item:
+                raise RepairError("each patch file requires path and content")
+            self._safe_path(item["path"])
+            if not isinstance(item["content"], str):
+                raise RepairError("patch content must be text")
         checkpoint=self.checkpoints.create(f"repair-{strategy}")
         self.store.evidence("repair_checkpoint", checkpoint["archive"], "TESTED")
         self.store.event("repair_checkpoint", {
