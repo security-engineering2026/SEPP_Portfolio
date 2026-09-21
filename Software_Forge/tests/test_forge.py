@@ -17,7 +17,8 @@ def test_inventory(tmp_path):
 
 def test_manifest_requirement_traceability(tmp_path):
     copy_manifest(tmp_path); result=ManifestEngine(tmp_path).snapshot()
-    assert result["manifest"]["state"]=="VERIFIED" and result["requirements"]["count"]>0\n    assert result["manifest"]["errors"]==[]
+    assert result["manifest"]["state"]=="VERIFIED" and result["requirements"]["count"]>0
+    assert result["manifest"]["errors"]==[]
 
 def test_independent_verification(tmp_path):
     copy_manifest(tmp_path); e=ForgeEngine(tmp_path); e.inspect(); e.manifest(); e.requirements()
