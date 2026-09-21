@@ -6,6 +6,7 @@ from .manifest import ManifestEngine, ManifestError
 from .requirements import RequirementEngine
 from .verifier import IndependentVerifier
 from .build import BuildEngine
+from .execution import ExecutionEngine
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
@@ -18,14 +19,11 @@ class ForgeEngine:
     def requirements(self):
         graph=RequirementEngine(self.root).persist(); self.store.evidence("requirements",self.root/".forge/requirements.json","OBSERVED"); self.store.event("requirements",{"count":len(graph["requirements"]),"manifest_sha256":graph["manifest_sha256"]}); return graph
     def build(self):
-        result=BuildEngine(self.root).build()
-        self.store.evidence("build",self.root/".forge/build.json","TESTED")
-        self.store.event("build",{"state":result["state"],"compiled_files":result["compiled_files"]})
-        return result
+        result=BuildEngine(self.root).build(); self.store.evidence("build",self.root/".forge/build.json","TESTED"); self.store.event("build",{"state":result["state"],"compiled_files":result["compiled_files"]}); return result
+    def execute(self,command,timeout_seconds=30.0,cwd=None):
+        result=ExecutionEngine(self.root).run(command,timeout_seconds,cwd); self.store.evidence("execution",self.root/".forge/execution.json","TESTED"); self.store.event("execution",{"state":result["state"],"exit_code":result["exit_code"],"error":result["error"]}); return result
     def verify(self):
-        result=IndependentVerifier(self.root).verify()
-        self.store.event("independent_verification",{"state":result["state"],"verification_sha256":result["verification_sha256"]})
-        return result
+        result=IndependentVerifier(self.root).verify(); self.store.event("independent_verification",{"state":result["state"],"verification_sha256":result["verification_sha256"]}); return result
     def health(self):
         gates={"manifest":(self.root/".forge/manifest.json").exists(),"persistence":(self.root/".forge/forge.db").exists(),"inventory":(self.root/".forge/inventory.json").exists(),"runtime":True,"independent_verification":False}
         state=None
@@ -39,5 +37,4 @@ class ForgeEngine:
             except Exception: gates["independent_verification"]=False
         return {"truth_state":"TESTED","gates":gates,"release_ready":all(gates.values())}
     def self_test(self):
-        self.store.meta("schema","1"); checks=[("persistence",self.store.meta("schema")=="1")]; inv=self.inspect(); checks.append(("inventory",inv["status"]=="OBSERVED")); man=self.manifest(); checks.append(("manifest",man["manifest"]["state"]=="VERIFIED")); graph=self.requirements(); checks.append(("requirements",len(graph["requirements"])>0)); checks.append(("runtime",True))
-        p=self.root/".forge/self_test.json"; p.write_text(json.dumps({"checks":checks,"environment":self.environment()},indent=2),encoding="utf-8"); self.store.evidence("self_test",p,"TESTED"); ok=all(v for _,v in checks); self.store.event("self_test",{"checks":checks,"result":"PASS" if ok else "FAIL"}); return ok,checks
+        self.store.meta("schema","1"); checks=[("persistence",self.store.meta("schema")=="1")]; inv=self.inspect(); checks.append(("inventory",inv["status"]=="OBSERVED")); man=self.manifest(); checks.append(("manifest",man["manifest"]["state"]=="VERIFIED")); graph=self.requirements(); checks.append(("requirements",len(graph["requirements"])>0)); checks.append(("runtime",True)); p=self.root/".forge/self_test.json"; p.write_text(json.dumps({"checks":checks,"environment":self.environment()},indent=2),encoding="utf-8"); self.store.evidence("self_test",p,"TESTED"); ok=all(v for _,v in checks); self.store.event("self_test",{"checks":checks,"result":"PASS" if ok else "FAIL"}); return ok,checks
