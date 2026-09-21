@@ -12,6 +12,7 @@ from .checkpoint import CheckpointEngine
 from .repair import RepairEngine
 from .manifest_evolution import ManifestEvolutionEngine
 from .impact import ChangeImpactEngine
+from .acceleration import ExecutionAccelerationEngine
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
@@ -24,6 +25,11 @@ class ForgeEngine:
         return result
     def manifest_evolution(self):
         return ManifestEvolutionEngine(self.root)
+    def acceleration_plan(self, changed_paths, max_parallel=None):
+        result=ExecutionAccelerationEngine(self.root).plan_from_changes(changed_paths, max_parallel=max_parallel)
+        self.store.evidence("acceleration_plan", self.root/".forge/acceleration_plan.json", "OBSERVED")
+        self.store.event("acceleration_plan", {"plan_id":result["plan_id"],"batches":result["batches"],"quality_preserved":result["quality_preserved"]})
+        return result
     def manifest(self):
         try: result=ManifestEngine(self.root).snapshot()
         except ManifestError as exc: result={"manifest":{"state":"FAILED","errors":[str(exc)]},"requirements":{"count":0,"requirements":[]}}
