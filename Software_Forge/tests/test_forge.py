@@ -132,3 +132,28 @@ def test_failure_attempt_ledger_persists_analysis(tmp_path):
     assert attempts[0]["failure_id"]==result["failure_id"]
     assert attempts[0]["strategy"]=="deterministic_failure_analysis"
     assert attempts[0]["status"]=="ANALYZED"
+
+
+def test_verifier_detects_tampered_failure_attempt_details(tmp_path):
+    copy_manifest(tmp_path)
+    e=ForgeEngine(tmp_path)
+    result=e.analyze_failure({"state":"FAILED","error":"OS_ERROR: launch"})
+    import sqlite3
+    con=sqlite3.connect(tmp_path/".forge/forge.db")
+    con.execute("UPDATE failure_attempts SET details=? WHERE id=1", ('{"category":"FORGED"}',))
+    con.commit(); con.close()
+    verification=e.verify()
+    assert verification["state"]=="FAILED"
+    assert any(c["check"]=="failure_attempt_1_binding" and not c["passed"] for c in verification["checks"])
+
+def test_verifier_detects_forged_failure_attempt_event(tmp_path):
+    copy_manifest(tmp_path)
+    e=ForgeEngine(tmp_path)
+    e.analyze_failure({"state":"FAILED","error":"OS_ERROR: launch"})
+    import sqlite3
+    con=sqlite3.connect(tmp_path/".forge/forge.db")
+    con.execute("UPDATE events SET payload=? WHERE kind='failure_attempt'", ('{"attempt_id":1,"failure_id":"forged","strategy":"deterministic_failure_analysis","status":"ANALYZED","details_sha256":"0"*64}',))
+    con.commit(); con.close()
+    verification=e.verify()
+    assert verification["state"]=="FAILED"
+    assert any(c["check"]=="failure_attempt_1_binding" and not c["passed"] for c in verification["checks"])
