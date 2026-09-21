@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib
+import hashlib, re
 from pathlib import Path
 import yaml
 
@@ -14,13 +14,16 @@ class ManifestEngine:
         self.path = self._find_manifest()
 
     def _find_manifest(self):
-        for p in [
-            self.root/"Software_Forge/SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml",
-            self.root/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml",
-            self.root/"FORGE_MANIFEST.yaml",
-        ]:
-            if p.exists():
-                return p
+        candidates = [*self.root.glob("Software_Forge/SOFTWARE_FORGE_MASTER_MANIFEST_v*.yaml"), *self.root.glob("SOFTWARE_FORGE_MASTER_MANIFEST_v*.yaml")]
+        def version_key(p):
+            m = re.search(r"_v(\\d+)\\.(\\d+)\\.yaml$", p.name)
+            return (int(m.group(1)), int(m.group(2))) if m else (-1, -1)
+        candidates.sort(key=version_key, reverse=True)
+        if candidates:
+            return candidates[0]
+        p=self.root/"FORGE_MANIFEST.yaml"
+        if p.exists():
+            return p
         raise ManifestError("Manifest not found")
 
     def load(self):
@@ -35,7 +38,7 @@ class ManifestEngine:
         errors=[]
         if missing:
             errors.append("missing_top_level:"+",".join(missing))
-        if data.get("forge_manifest_version")!="1.2":
+        if data.get("forge_manifest_version") not in {"1.2","1.3"}:
             errors.append("unsupported_manifest_version")
         product=data.get("product")
         if not isinstance(product,dict) or not product.get("id") or not product.get("name"):
@@ -68,6 +71,10 @@ class ManifestEngine:
         offline=data.get("offline")
         required_offline={"local_build","local_test","local_static_analysis","local_runtime","local_evidence","local_git","local_recovery","local_failure_diagnosis","local_repair","local_regression","local_independent_verification","local_product_intelligence","local_search_index","knowledge_pack_import","knowledge_pack_export","dependency_cache","toolchain_cache","documentation_cache","package_registry_cache","platform_image_cache","offline_external_discovery"}
         if not isinstance(offline,dict) or not required_offline.issubset(offline): errors.append("offline_capability_contract_incomplete")
+        evolution=data.get("manifest_evolution") if isinstance(data,dict) else None
+        if data.get("forge_manifest_version") == "1.3":
+            required_evolution={"proposal_engine","structured_diff","explicit_user_instruction","approval_ledger","versioned_change","requirement_delta","impact_analysis","affected_test_detection","validation_after_change","independent_verification_after_change","silent_change_forbidden","requirement_weakening_requires_explicit_approval","removal_requires_explicit_approval","stale_manifest_rejection","immutable_proposal_hash","rollback_or_rejection"}
+            if not isinstance(evolution,dict) or not required_evolution.issubset(evolution): errors.append("manifest_evolution_contract_incomplete")
         pre=data.get("online_preprovisioning")
         required_pre={"readiness_scan","dependency_inventory","toolchain_inventory","required_runtime_inventory","required_sdk_inventory","package_cache_warmup","browser_runtime_warmup","platform_image_warmup","documentation_cache_warmup","knowledge_pack_warmup","offline_readiness_score","missing_capability_report","scheduled_refresh","integrity_verification","resumable_downloads","content_addressed_storage","version_pinning","license_policy_check","storage_budget"}
         if not isinstance(pre,dict) or not required_pre.issubset(pre): errors.append("online_preprovisioning_contract_incomplete")
