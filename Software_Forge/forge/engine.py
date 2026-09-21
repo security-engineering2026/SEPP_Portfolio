@@ -10,11 +10,14 @@ from .execution import ExecutionEngine
 from .failure import FailureAnalyzer
 from .checkpoint import CheckpointEngine
 from .repair import RepairEngine
+from .manifest_evolution import ManifestEvolutionEngine
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
     def inspect(self):
         data=inventory(self.root); data["environment"]=self.environment(); out=self.root/".forge/inventory.json"; out.write_text(json.dumps(data,indent=2),encoding="utf-8"); h=self.store.evidence("inventory",out); self.store.event("inventory",{"sha256":h}); return data
+    def manifest_evolution(self):
+        return ManifestEvolutionEngine(self.root)
     def manifest(self):
         try: result=ManifestEngine(self.root).snapshot()
         except ManifestError as exc: result={"manifest":{"state":"FAILED","errors":[str(exc)]},"requirements":{"count":0,"requirements":[]}}
