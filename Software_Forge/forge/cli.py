@@ -5,9 +5,15 @@ from .dashboard import serve
 def main(argv=None):
     ap=argparse.ArgumentParser(prog="forge"); ap.add_argument("--root",default="."); sub=ap.add_subparsers(dest="cmd",required=True)
     for n in ("inventory","health","self-test","build"): sub.add_parser(n)
+    mp=sub.add_parser("manifest-propose"); mp.add_argument("instruction"); mp.add_argument("changes_json"); mp.add_argument("--reason",default="")
+    ma=sub.add_parser("manifest-apply"); ma.add_argument("proposal_id"); ma.add_argument("approval_token"); ma.add_argument("--approver",default="local_user")
     x=sub.add_parser("execute"); x.add_argument("--timeout",type=float,default=30.0); x.add_argument("command",nargs=argparse.REMAINDER)
     s=sub.add_parser("serve"); s.add_argument("--host",default="127.0.0.1"); s.add_argument("--port",type=int,default=8765)
     args=ap.parse_args(argv); e=ForgeEngine(Path(args.root))
+    if args.cmd=="manifest-propose":
+        changes=json.loads(args.changes_json); r=e.manifest_evolution().propose(args.instruction,changes,reason=args.reason); print(json.dumps(r,indent=2)); return 0
+    if args.cmd=="manifest-apply":
+        r=e.manifest_evolution().approve_and_apply(args.proposal_id,args.approval_token,args.approver); print(json.dumps(r,indent=2)); return 0
     if args.cmd=="inventory": print(json.dumps(e.inspect(),indent=2)); return 0
     if args.cmd=="build":
         r=e.build(); print(json.dumps(r,indent=2)); return 0 if r["state"]=="PASSED" else 1
