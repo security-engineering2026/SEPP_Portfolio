@@ -65,3 +65,11 @@ def test_execution_rejects_escape_cwd(tmp_path):
         assert "inside project root" in str(exc)
     else:
         assert False, "escape cwd must be rejected"
+
+
+def test_verifier_detects_tampered_execution_record(tmp_path):
+    copy_manifest(tmp_path); e=ForgeEngine(tmp_path); e.inspect(); e.manifest(); e.requirements(); e.execute([sys.executable,"-c","print('binding')"])
+    p=tmp_path/".forge/execution.json"; data=json.loads(p.read_text(encoding="utf-8")); data["stdout"]="forged"; p.write_text(json.dumps(data),encoding="utf-8")
+    result=e.verify()
+    assert result["state"]=="FAILED"
+    assert any(c["check"].endswith("_identity") and not c["passed"] for c in result["checks"])
