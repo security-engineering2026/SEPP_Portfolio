@@ -1,0 +1,147 @@
+forge_manifest_version: "1.1"
+
+product:
+  id: software-forge
+  name: Software Forge
+  type: software_lifecycle_control_plane
+  version: "1.1.0"
+
+intent:
+  description: >
+    Software Lifecycle Control Plane / Product Lifecycle Orchestrator that
+    builds new software, independently repairs imported software, evolves
+    existing products, analyzes comparable external products and engineering
+    patterns when requested, executes real validation, repairs failures,
+    preserves project knowledge, and releases only with evidence and
+    independent verification.
+
+modes:
+  - build_new
+  - repair_imported
+  - evolve_existing
+
+core_principles:
+  user_intent_preservation: required
+  evidence_over_claims: required
+  independent_verification: required
+  no_artificial_iteration_limit: true
+  persistent_project_memory: required
+  portable_project_knowledge: required
+  provider_independence: required
+  target_native_execution: required
+  autonomous_repair: required
+  hardware_environment_diagnosis: required
+  pattern_borrowing_not_assumption: required
+
+resolution:
+  internet_research: allowed
+  official_documentation: allowed
+  external_product_research: allowed
+  ai_provider_fallback: required
+  alternative_toolchain: allowed
+  sandbox_experiment: required
+  hardware_diagnosis: required
+  workaround_generation: required
+
+persistence:
+  project_memory: required
+  evidence_store: required
+  failure_history: required
+  decision_history: required
+  environment_history: required
+  manifest_history: required
+  knowledge_export: required
+  knowledge_import: required
+  resumable_execution: required
+  product_intelligence_history: required
+
+network:
+  modes:
+    - direct
+    - vpn
+    - proxy
+    - restricted
+    - offline
+  fallback_enabled: true
+
+product_intelligence:
+  enabled: true
+  external_product_discovery: required
+  similar_product_analysis: required
+  capability_extraction: required
+  workflow_pattern_analysis: required
+  ux_pattern_analysis: required
+  architecture_pattern_analysis: allowed
+  evidence_backed_comparison: required
+  provenance_tracking: required
+  gap_analysis: required
+  improvement_candidate_generation: required
+  requirement_traceability: required
+  impact_analysis: required
+  approval_before_contract_change: required
+  implementation_without_approval: false
+  outputs:
+    - product_comparison
+    - capability_matrix
+    - pattern_catalog
+    - gap_analysis
+    - improvement_candidates
+    - evidence_graph
+    - impact_analysis
+  lifecycle:
+    - user_improvement_request
+    - comparison_scope
+    - external_product_discovery
+    - evidence_collection
+    - capability_extraction
+    - pattern_analysis
+    - current_product_comparison
+    - gap_analysis
+    - improvement_candidates
+    - impact_analysis
+    - approval
+    - implementation
+    - build
+    - validation
+    - regression
+    - independent_verification
+
+validation:
+  unit: required
+  integration: required
+  runtime: required
+  ui: required
+  security: required
+  red_team: required
+  blue_team: required
+  regression: required
+  independent_verification: required
+  product_intelligence: required
+
+release:
+  evidence_required: true
+  clean_install_required: true
+  clean_uninstall_required: true
+  artifact_integrity_required: true
+
+autonomy:
+  max_level: 3
+
+resource_policy:
+  iteration_cap: null
+  cpu: configurable
+  memory: configurable
+  disk: configurable
+  wall_time: configurable
+  api_cost: configurable
+  network: configurable
+  human_approval: configurable
+
+truth_states:
+  - unknown
+  - claimed
+  - observed
+  - tested
+  - verified
+  - passed
+  - released
