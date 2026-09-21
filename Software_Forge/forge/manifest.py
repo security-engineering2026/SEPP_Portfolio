@@ -16,7 +16,7 @@ class ManifestEngine:
     def _find_manifest(self):
         candidates = [*self.root.glob("Software_Forge/SOFTWARE_FORGE_MASTER_MANIFEST_v*.yaml"), *self.root.glob("SOFTWARE_FORGE_MASTER_MANIFEST_v*.yaml")]
         def version_key(p):
-            m = re.search(r"_v(\\d+)\\.(\\d+)\\.yaml$", p.name)
+            m = re.search(r"_v(\d+)\.(\d+)\.yaml$", p.name)
             return (int(m.group(1)), int(m.group(2))) if m else (-1, -1)
         candidates.sort(key=version_key, reverse=True)
         if candidates:
