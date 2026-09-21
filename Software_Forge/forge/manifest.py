@@ -38,7 +38,11 @@ class ManifestEngine:
         errors=[]
         if missing:
             errors.append("missing_top_level:"+",".join(missing))
-        if data.get("forge_manifest_version") not in {"1.2","1.3"}:
+        try:
+            major, minor = (int(x) for x in str(data.get("forge_manifest_version")).split(".", 1))
+        except Exception:
+            major, minor = -1, -1
+        if major != 1 or minor < 2:
             errors.append("unsupported_manifest_version")
         product=data.get("product")
         if not isinstance(product,dict) or not product.get("id") or not product.get("name"):
