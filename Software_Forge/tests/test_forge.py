@@ -73,3 +73,23 @@ def test_verifier_detects_tampered_execution_record(tmp_path):
     result=e.verify()
     assert result["state"]=="FAILED"
     assert any(c["check"].endswith("_identity") and not c["passed"] for c in result["checks"])
+
+
+def test_failure_analyzer_classifies_timeout(tmp_path):
+    copy_manifest(tmp_path)
+    e=ForgeEngine(tmp_path)
+    result=e.analyze_failure({"state":"FAILED","error":"TIMEOUT","exit_code":None})
+    assert result["state"]=="ANALYZED"
+    assert result["category"]=="ENVIRONMENT"
+    assert (tmp_path/".forge/failure.json").exists()
+
+def test_failure_analyzer_classifies_os_error(tmp_path):
+    copy_manifest(tmp_path)
+    result=ForgeEngine(tmp_path).analyze_failure({"state":"FAILED","error":"OS_ERROR: process launch failed"})
+    assert result["category"]=="OS"
+
+def test_failure_analyzer_no_failure_is_explicit(tmp_path):
+    copy_manifest(tmp_path)
+    result=ForgeEngine(tmp_path).analyze_failure({"state":"PASSED","exit_code":0})
+    assert result["state"]=="NO_FAILURE"
+    assert result["category"] is None
