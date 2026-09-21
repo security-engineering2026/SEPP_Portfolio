@@ -365,3 +365,17 @@ def test_manifest_evolution_removal_requires_explicit_approval(tmp_path):
     proposal=e.propose("Remove a requirement explicitly.", [{"op":"REMOVE","path":"offline.model_cache"}])
     assert any(c["op"]=="REMOVE" for c in proposal["changes"])
     assert proposal["approval_required"] is True
+
+
+def test_change_impact_builds_regression_plan(tmp_path):
+    copy_manifest(tmp_path)
+    e=ForgeEngine(tmp_path)
+    e.manifest()
+    e.requirements()
+    result=e.impact(["Software_Forge/forge/manifest.py"],["offline.local_build"])
+    assert result["state"]=="OBSERVED"
+    assert result["regression_required"] is True
+    assert result["release_blocked_until_affected_tests_verified"] is True
+    assert result["affected_requirement_ids"]
+    assert result["affected_test_ids"]
+    assert (tmp_path/".forge/impact.json").exists()
