@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib, json, sqlite3
+import hashlib, json, sqlite3, zipfile
 from pathlib import Path
 from .manifest import ManifestEngine
 from .store import ForgeStore
@@ -17,6 +17,33 @@ def _failure_attempt_details_sha256(details: str) -> str:
     except Exception:
         canonical = details
     return hashlib.sha256(canonical.encode()).hexdigest()
+
+def _canonical(data):
+    return json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
+
+def _checkpoint_identity(tree, manifest_hash, environment):
+    return hashlib.sha256(_canonical({
+        "tree": tree,
+        "manifest_sha256": manifest_hash,
+        "environment": environment,
+    })).hexdigest()
+
+def _archive_tree(archive: Path):
+    entries=[]
+    with zipfile.ZipFile(archive) as z:
+        for info in z.infolist():
+            if info.is_dir():
+                continue
+            name=Path(info.filename)
+            if name.is_absolute() or ".." in name.parts:
+                raise ValueError("unsafe checkpoint archive path")
+            data=z.read(info)
+            entries.append({
+                "path": info.filename.replace("\\", "/"),
+                "sha256": hashlib.sha256(data).hexdigest(),
+                "size": len(data),
+            })
+    return sorted(entries, key=lambda x: x["path"])
 
 class IndependentVerifier:
     """Recomputes verification from source and persisted evidence; builder self-test is not authority."""
@@ -60,6 +87,35 @@ class IndependentVerifier:
 
         chain = ForgeStore(self.root).verify_event_chain()
         checks.append({"check":"event_chain_integrity","passed":chain["state"] == "VERIFIED","details":chain})
+
+        checkpoint_ok = True
+        checkpoint_root = self.forge / "checkpoints"
+        if checkpoint_root.exists():
+            for target in sorted(p for p in checkpoint_root.iterdir() if p.is_dir()):
+                record_path = target / "checkpoint.json"
+                archive = target / "source.zip"
+                check_name = target.name
+                try:
+                    record = json.loads(record_path.read_text(encoding="utf-8"))
+                    archive_hash = _sha256(archive)
+                    archive_hash_ok = record.get("archive_sha256") == archive_hash
+                    tree_hash_ok = hashlib.sha256(_canonical(record["tree"])).hexdigest() == record.get("tree_sha256")
+                    identity_ok = record.get("identity_sha256") == _checkpoint_identity(
+                        record["tree"], record.get("manifest_sha256"), record.get("environment")
+                    )
+                    archive_tree = _archive_tree(archive)
+                    archive_content_ok = archive_tree == sorted(record["tree"], key=lambda x: x["path"])
+                    checks.extend([
+                        {"check":f"checkpoint_{check_name}_archive_hash","passed":archive_hash_ok},
+                        {"check":f"checkpoint_{check_name}_tree_hash","passed":tree_hash_ok},
+                        {"check":f"checkpoint_{check_name}_identity","passed":identity_ok},
+                        {"check":f"checkpoint_{check_name}_archive_content","passed":archive_content_ok},
+                    ])
+                    checkpoint_ok = checkpoint_ok and archive_hash_ok and tree_hash_ok and identity_ok and archive_content_ok
+                except Exception as exc:
+                    checkpoint_ok = False
+                    checks.append({"check":f"checkpoint_{check_name}_integrity","passed":False,"reason":str(exc)})
+        checks.append({"check":"checkpoint_integrity","passed":checkpoint_ok})
 
         evidence_ok = True
         db = self.forge / "forge.db"
