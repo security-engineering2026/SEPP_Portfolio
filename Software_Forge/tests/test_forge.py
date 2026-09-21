@@ -5,7 +5,7 @@ from forge.engine import ForgeEngine
 from forge.manifest import ManifestEngine
 
 def copy_manifest(tmp_path):
-    src=Path(__file__).parents[1]/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.3.yaml"
+    src=Path(__file__).parents[1]/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.4.yaml"
     dst=tmp_path/"Software_Forge"; dst.mkdir(); (dst/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml").write_text(src.read_text(encoding="utf-8"),encoding="utf-8")
 
 def test_persistence_and_self_test(tmp_path):
