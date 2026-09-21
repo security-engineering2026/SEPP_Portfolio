@@ -5,8 +5,8 @@ from forge.engine import ForgeEngine
 from forge.manifest import ManifestEngine
 
 def copy_manifest(tmp_path):
-    src=Path(__file__).parents[1]/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.1.yaml"
-    dst=tmp_path/"Software_Forge"; dst.mkdir(); (dst/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.1.yaml").write_text(src.read_text(encoding="utf-8"),encoding="utf-8")
+    src=Path(__file__).parents[1]/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml"
+    dst=tmp_path/"Software_Forge"; dst.mkdir(); (dst/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml").write_text(src.read_text(encoding="utf-8"),encoding="utf-8")
 
 def test_persistence_and_self_test(tmp_path):
     copy_manifest(tmp_path); e=ForgeEngine(tmp_path); ok,checks=e.self_test()
@@ -262,3 +262,10 @@ def test_repair_rejects_protected_paths(tmp_path):
         assert "protected project state" in str(exc)
     else:
         assert False, "repair must reject protected state"
+
+
+def test_manifest_v12_offline_contract_is_verified(tmp_path):
+    copy_manifest(tmp_path)
+    result=ManifestEngine(tmp_path).snapshot()
+    assert result["manifest"]["state"]=="VERIFIED", result["manifest"]["errors"]
+    assert result["requirements"]["count"] >= 40
