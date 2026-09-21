@@ -1,14 +1,14 @@
-# Software Forge — Master Product Manifest v1.2
+# Software Forge — Master Product Manifest v1.3
 
 This directory contains the current Product Contract for Software Forge.
 
 Files:
-- SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml — current machine-oriented Product Contract.
+- SOFTWARE_FORGE_MASTER_MANIFEST_v1.3.yaml — current machine-oriented Product Contract.
 
 Version history:
 - v1.0 — baseline Product Contract.
 - v1.1 — Product Intelligence / Similar Product Analysis foundation.
-- v1.2 — large-scale Product Intelligence Search Engine contract plus offline-first engineering, local intelligence, pre-provisioning, dependency/toolchain/documentation caches, knowledge packs, integrity verification and online/offline transition requirements.
+- v1.3 — large-scale Product Intelligence Search Engine contract plus offline-first engineering, local intelligence, pre-provisioning, dependency/toolchain/documentation caches, knowledge packs, integrity verification and online/offline transition requirements.
 
 Critical rules:
 - The Manifest is the Product Contract, not the implementation.
@@ -24,3 +24,18 @@ Critical rules:
 
 GitHub branch:
 software-forge-manifest-v1.0
+
+
+## Manifest Evolution
+
+The Product Contract is versioned and cannot be silently weakened. Software Forge now supports an auditable manifest evolution flow:
+
+1. explicit user instruction
+2. structured proposal and exact diff
+3. requirement/test impact analysis
+4. approval token bound to the proposed contract
+5. versioned manifest creation
+6. approval ledger and immutable proposal hashes
+7. re-validation and independent verification gates
+
+The current contract is `SOFTWARE_FORGE_MASTER_MANIFEST_v1.3.yaml`. A rejected or stale proposal does not mutate the current manifest.
