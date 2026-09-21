@@ -1,0 +1,73 @@
+name: Software Forge - Windows Live Validation
+on:
+  pull_request:
+  push:
+    paths:
+      - 'Software_Forge/**'
+      - '.github/workflows/software-forge-windows.yml'
+  workflow_dispatch:
+jobs:
+  windows-live:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test tooling
+        shell: pwsh
+        working-directory: Software_Forge
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Forge self-test
+        shell: pwsh
+        working-directory: Software_Forge
+        run: python -m forge self-test
+      - name: Forge build validation
+        shell: pwsh
+        working-directory: Software_Forge
+        run: python -m forge build
+      - name: Forge unit tests
+        shell: pwsh
+        working-directory: Software_Forge
+        run: python -m pytest -q
+      - name: Forge execution smoke
+        shell: pwsh
+        working-directory: Software_Forge
+        run: python -m forge execute python -c "print('forge-execution-ok')"
+      - name: Live Windows runtime smoke
+        shell: pwsh
+        working-directory: Software_Forge
+        run: |
+          $p = Start-Process python -ArgumentList '-m','forge','serve','--host','127.0.0.1','--port','8765' -PassThru -WindowStyle Hidden
+          try {
+            Start-Sleep -Seconds 2
+            $r = Invoke-WebRequest http://127.0.0.1:8765/ -UseBasicParsing
+            if ($r.StatusCode -ne 200) { throw "HTTP status $($r.StatusCode)" }
+            $r.Content | Out-File forge-live-runtime.json -Encoding utf8
+            Get-Content forge-live-runtime.json
+          } finally { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+      - name: Collect evidence
+        if: always()
+        shell: pwsh
+        working-directory: Software_Forge
+        run: |
+          python -m forge inventory | Out-File forge-inventory.json -Encoding utf8
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $health = python -m forge health
+          $health_exit = $LASTEXITCODE
+          $health | Out-File forge-health.json -Encoding utf8
+          if ($health_exit -ne 0 -and $health_exit -ne 2) { exit $health_exit }
+          exit 0
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: software-forge-windows-evidence
+          path: |
+            Software_Forge/forge-*.json
+            Software_Forge/.forge/**
