@@ -199,7 +199,7 @@ def test_verifier_detects_checkpoint_tamper(tmp_path):
     e=ForgeEngine(tmp_path)
     e.checkpoint("verify")
     result=e.verify()
-    assert result["state"]=="VERIFIED"
+    assert result["state"]=="VERIFIED", result["checks"]
     checkpoint_root=tmp_path/".forge/checkpoints"
     checkpoint=next(p for p in checkpoint_root.iterdir() if p.is_dir())
     archive=checkpoint/"source.zip"
