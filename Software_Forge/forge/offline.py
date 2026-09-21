@@ -101,7 +101,9 @@ class OfflineReadinessEngine:
         digest=_sha256_file(source)
         if expected_sha256 and digest.lower()!=expected_sha256.lower():
             raise OfflineProvisionError("artifact integrity mismatch")
-        target=self._dirs().get(capability)
+        mapping={"package_registry_cache":"packages","documentation_cache":"documentation","browser_runtime":"browser","platform_images":"platform_images","knowledge_pack":"knowledge","model_cache":"models","android_sdk_cache":"sdk","emulator_image_cache":"emulators","toolchain_cache":"toolchains"}
+        target_name=mapping.get(capability, capability)
+        target=self._dirs().get(target_name)
         if target is None:
             raise OfflineProvisionError(f"unsupported cache capability: {capability}")
         target.mkdir(parents=True,exist_ok=True)
