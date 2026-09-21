@@ -197,6 +197,8 @@ def test_checkpoint_detects_archive_tamper(tmp_path):
 def test_verifier_detects_checkpoint_tamper(tmp_path):
     copy_manifest(tmp_path)
     e=ForgeEngine(tmp_path)
+    e.manifest()
+    e.requirements()
     e.checkpoint("verify")
     result=e.verify()
     assert result["state"]=="VERIFIED", result["checks"]
