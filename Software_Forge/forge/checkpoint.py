@@ -38,8 +38,8 @@ class CheckpointEngine:
 
     def _manifest_hash(self):
         for p in (
-            self.root/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.yaml",
-            self.root/"Software_Forge"/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.yaml",
+            self.root/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml",
+            self.root/"Software_Forge"/"SOFTWARE_FORGE_MASTER_MANIFEST_v1.2.yaml",
             self.root/"FORGE_MANIFEST.yaml",
         ):
             if p.exists():
