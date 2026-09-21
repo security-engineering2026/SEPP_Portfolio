@@ -7,6 +7,10 @@ from .store import ForgeStore
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
+def _execution_id(data: dict) -> str:
+    payload = {k: v for k, v in data.items() if k != "execution_id"}
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
 class IndependentVerifier:
     """Recomputes verification from source and persisted evidence; builder self-test is not authority."""
     def __init__(self, root: Path):
@@ -55,10 +59,15 @@ class IndependentVerifier:
         if db.exists():
             con = sqlite3.connect(db)
             try:
-                rows = con.execute("SELECT id,path,sha256 FROM evidence ORDER BY id").fetchall()
+                rows = con.execute("SELECT id,kind,path,sha256 FROM evidence ORDER BY id").fetchall()
+                events = con.execute("SELECT payload FROM events WHERE kind='execution' ORDER BY id").fetchall()
             finally:
                 con.close()
-            for eid, raw_path, expected_hash in rows:
+            execution_bindings = []
+            for payload, in events:
+                try: execution_bindings.append(json.loads(payload))
+                except Exception: execution_bindings.append({})
+            for eid, kind, raw_path, expected_hash in rows:
                 p = Path(raw_path)
                 try:
                     actual = _sha256(p)
@@ -67,6 +76,18 @@ class IndependentVerifier:
                     actual, ok = None, False
                 evidence_ok = evidence_ok and ok
                 checks.append({"check":f"evidence_{eid}_integrity","passed":ok,"expected":expected_hash,"observed":actual})
+                if kind == "execution" and ok:
+                    try:
+                        data=json.loads(p.read_text(encoding="utf-8"))
+                        recomputed=_execution_id(data)
+                        identity_ok=data.get("execution_id")==recomputed
+                        bound=any(b.get("execution_id")==data.get("execution_id") and b.get("evidence_sha256")==expected_hash for b in execution_bindings)
+                        checks.append({"check":f"execution_{eid}_identity","passed":identity_ok,"execution_id":data.get("execution_id"),"recomputed":recomputed})
+                        checks.append({"check":f"execution_{eid}_event_binding","passed":bound})
+                        evidence_ok = evidence_ok and identity_ok and bound
+                    except Exception as exc:
+                        evidence_ok=False
+                        checks.append({"check":f"execution_{eid}_binding","passed":False,"reason":str(exc)})
         checks.append({"check":"evidence_integrity","passed":evidence_ok})
         state = "VERIFIED" if checks and all(c["passed"] for c in checks) else "FAILED"
         return self._write(checks, state)
