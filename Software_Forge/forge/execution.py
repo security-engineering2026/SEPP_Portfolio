@@ -1,9 +1,9 @@
 from __future__ import annotations
-import json, os, platform, subprocess, time
+import hashlib, json, os, platform, subprocess, time
 from pathlib import Path
 
 class ExecutionEngine:
-    """Controlled local execution with timeout, output capture and durable evidence."""
+    """Controlled local execution with timeout, output capture and durable identity."""
     def __init__(self, root: Path):
         self.root = root.resolve()
         self.forge = self.root / ".forge"
@@ -17,22 +17,15 @@ class ExecutionEngine:
         if not workdir.is_relative_to(self.root):
             raise ValueError("execution cwd must remain inside project root")
         started = time.time()
-        state = "FAILED"
-        exit_code = None
-        stdout = ""
-        stderr = ""
-        error = None
+        state, exit_code, stdout, stderr, error = "FAILED", None, "", "", None
         try:
             p = subprocess.run(command, cwd=workdir, capture_output=True, text=True,
                                timeout=timeout_seconds, shell=False, check=False)
-            exit_code = p.returncode
-            stdout, stderr = p.stdout, p.stderr
+            exit_code, stdout, stderr = p.returncode, p.stdout, p.stderr
             state = "PASSED" if exit_code == 0 else "FAILED"
         except subprocess.TimeoutExpired as exc:
-            state = "FAILED"
             error = "TIMEOUT"
-            stdout = exc.stdout or ""
-            stderr = exc.stderr or ""
+            stdout, stderr = exc.stdout or "", exc.stderr or ""
         except OSError as exc:
             error = f"OS_ERROR:{exc}"
         result = {
@@ -42,6 +35,8 @@ class ExecutionEngine:
             "duration_seconds": round(time.time() - started, 6),
             "environment": {"os": platform.platform(), "python": platform.python_version(), "pid": os.getpid()},
         }
+        canonical = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
+        result["execution_id"] = hashlib.sha256(canonical).hexdigest()
         self.forge.mkdir(parents=True, exist_ok=True)
         (self.forge / "execution.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
         return result
