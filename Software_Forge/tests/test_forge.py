@@ -122,3 +122,13 @@ def test_failure_analyzer_binds_evidence_refs(tmp_path):
         "execution_id":"exec-123","evidence_sha256":"abc123"
     })
     assert {x["field"] for x in result["evidence_refs"]}=={"execution_id","evidence_sha256"}
+
+def test_failure_attempt_ledger_persists_analysis(tmp_path):
+    copy_manifest(tmp_path)
+    e=ForgeEngine(tmp_path)
+    result=e.analyze_failure({"state":"FAILED","error":"OS_ERROR: launch"})
+    attempts=e.store.failure_attempts(result["failure_id"])
+    assert len(attempts)==1
+    assert attempts[0]["failure_id"]==result["failure_id"]
+    assert attempts[0]["strategy"]=="deterministic_failure_analysis"
+    assert attempts[0]["status"]=="ANALYZED"
