@@ -269,3 +269,37 @@ def test_manifest_v12_offline_contract_is_verified(tmp_path):
     result=ManifestEngine(tmp_path).snapshot()
     assert result["manifest"]["state"]=="VERIFIED", result["manifest"]["errors"]
     assert result["requirements"]["count"] >= 40
+
+
+def test_offline_readiness_creates_local_capability_inventory(tmp_path):
+    copy_manifest(tmp_path)
+    from forge.offline import OfflineReadinessEngine
+    result=OfflineReadinessEngine(tmp_path).inventory()
+    assert result["state"]=="OBSERVED"
+    assert (tmp_path/".forge/offline/readiness.json").exists()
+    assert any(x["capability"]=="python_runtime" and x["state"]=="OBSERVED" for x in result["capabilities"])
+
+def test_offline_artifact_import_is_content_addressed_and_verified(tmp_path):
+    copy_manifest(tmp_path)
+    from forge.offline import OfflineReadinessEngine
+    source=tmp_path/"artifact.bin"; source.write_bytes(b"offline-artifact")
+    result=OfflineReadinessEngine(tmp_path).import_artifact(source,"documentation_cache")
+    assert result["state"]=="VERIFIED"
+    assert Path(result["path"]).exists()
+    assert result["sha256"]
+
+def test_product_search_builds_large_deduplicated_pool(tmp_path):
+    copy_manifest(tmp_path)
+    from forge.product_intelligence_search import LocalCatalogSource, ProductSearchEngine
+    records=[
+        {"url":"https://example.test/a","name":"Forge A","description":"workflow automation build testing","capabilities":["build","test"],"source":"catalog-a"},
+        {"url":"https://example.test/a","name":"Forge A duplicate","description":"build testing","capabilities":["build"],"source":"catalog-b"},
+    ]
+    for i in range(120):
+        records.append({"url":f"https://example.test/{i}","name":f"Product {i}","description":"software lifecycle build test workflow","capabilities":["build","test"],"source":"catalog"})
+    result=ProductSearchEngine([LocalCatalogSource(records)]).discover(
+        ["software lifecycle","build test","workflow"], minimum_candidates=100
+    )
+    assert result["unique_count"]>=100
+    assert result["unique_count"]==len(result["candidates"])
+    assert result["minimum_met"] is True
