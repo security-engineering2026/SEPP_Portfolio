@@ -223,3 +223,40 @@ def test_checkpoint_rejects_archive_path_traversal(tmp_path):
         assert "archive integrity" in str(exc)
     else:
         assert False, "unsafe archive path must be rejected"
+
+
+def test_repair_applies_valid_patch_transactionally(tmp_path):
+    copy_manifest(tmp_path)
+    target=tmp_path/"app.py"
+    target.write_text("value = 1\n", encoding="utf-8")
+    result=ForgeEngine(tmp_path).repair(
+        [{"path":"app.py","content":"value = 2\n"}],
+        strategy="valid_patch",
+    )
+    assert result["state"]=="APPLIED"
+    assert target.read_text(encoding="utf-8")=="value = 2\n"
+    assert result["build"]["state"]=="PASSED"
+
+def test_repair_rolls_back_failed_build(tmp_path):
+    copy_manifest(tmp_path)
+    target=tmp_path/"app.py"
+    target.write_text("value = 1\n", encoding="utf-8")
+    result=ForgeEngine(tmp_path).repair(
+        [{"path":"app.py","content":"def broken(:\n"}],
+        strategy="broken_patch",
+    )
+    assert result["state"]=="ROLLED_BACK"
+    assert target.read_text(encoding="utf-8")=="value = 1\n"
+    assert result["build"]["state"]=="FAILED"
+
+def test_repair_rejects_protected_paths(tmp_path):
+    copy_manifest(tmp_path)
+    try:
+        ForgeEngine(tmp_path).repair(
+            [{"path":".forge/forbidden.txt","content":"x"}],
+            strategy="protected_path",
+        )
+    except ValueError as exc:
+        assert "protected project state" in str(exc)
+    else:
+        assert False, "repair must reject protected state"
