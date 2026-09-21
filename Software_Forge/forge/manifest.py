@@ -55,7 +55,7 @@ class ManifestEngine:
             "capability_extraction","workflow_pattern_analysis","ux_pattern_analysis",
             "evidence_backed_comparison","provenance_tracking","gap_analysis",
             "improvement_candidate_generation","requirement_traceability","impact_analysis",
-            "approval_before_contract_change","implementation_without_approval","outputs","lifecycle","discovery","analysis","offline",
+            "approval_before_contract_change","implementation_without_approval","discovery","analysis","offline",
         }
         if not isinstance(product_intelligence,dict) or not required_product_intelligence.issubset(product_intelligence):
             errors.append("product_intelligence_contract_incomplete")
