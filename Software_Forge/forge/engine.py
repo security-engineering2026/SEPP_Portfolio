@@ -24,6 +24,14 @@ class ForgeEngine:
         result=ExecutionEngine(self.root).run(command,timeout_seconds,cwd)
         evidence_hash=self.store.evidence("execution",self.root/".forge/execution.json","TESTED")
         self.store.event("execution",{"execution_id":result["execution_id"],"state":result["state"],"exit_code":result["exit_code"],"error":result["error"],"evidence_sha256":evidence_hash})
+        req_path=self.root/".forge/requirements.json"
+        if req_path.exists():
+            graph=json.loads(req_path.read_text(encoding="utf-8"))
+            for req in graph.get("requirements",[]):
+                req["evidence"].append({"evidence_type":"execution","execution_id":result["execution_id"],"sha256":evidence_hash,"status":"TESTED"})
+                req["verification"]="OBSERVED"
+            req_path.write_text(json.dumps(graph,indent=2),encoding="utf-8")
+            self.store.evidence("requirements_lineage",req_path,"TESTED")
         return result
     def verify(self):
         result=IndependentVerifier(self.root).verify(); self.store.event("independent_verification",{"state":result["state"],"verification_sha256":result["verification_sha256"]}); return result
