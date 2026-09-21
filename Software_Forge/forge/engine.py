@@ -9,6 +9,7 @@ from .build import BuildEngine
 from .execution import ExecutionEngine
 from .failure import FailureAnalyzer
 from .checkpoint import CheckpointEngine
+from .repair import RepairEngine
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
@@ -45,6 +46,8 @@ class ForgeEngine:
         result=CheckpointEngine(self.root).restore(checkpoint_id)
         self.store.event("checkpoint_restore",result)
         return result
+    def repair(self, files, strategy="candidate_patch", build=True):
+        return RepairEngine(self.root).apply(files, strategy=strategy, build=build)
     def analyze_failure(self, observation):
         result=FailureAnalyzer(self.root).analyze(observation)
         self.store.evidence("failure_analysis",self.root/".forge/failure.json","TESTED")
