@@ -7,6 +7,7 @@ from .requirements import RequirementEngine
 from .verifier import IndependentVerifier
 from .build import BuildEngine
 from .execution import ExecutionEngine
+from .failure import FailureAnalyzer
 class ForgeEngine:
     def __init__(self,root:Path): self.root=root.resolve(); self.store=ForgeStore(self.root)
     def environment(self): return {"os":platform.platform(),"python":platform.python_version(),"machine":platform.machine(),"cwd":str(self.root),"pid":os.getpid(),"time_utc":time.time()}
@@ -32,6 +33,11 @@ class ForgeEngine:
                 req["verification"]="OBSERVED"
             req_path.write_text(json.dumps(graph,indent=2),encoding="utf-8")
             self.store.evidence("requirements_lineage",req_path,"TESTED")
+        return result
+    def analyze_failure(self, observation):
+        result=FailureAnalyzer(self.root).analyze(observation)
+        self.store.evidence("failure_analysis",self.root/".forge/failure.json","TESTED")
+        self.store.event("failure_analysis",{"state":result["state"],"category":result["category"]})
         return result
     def verify(self):
         result=IndependentVerifier(self.root).verify(); self.store.event("independent_verification",{"state":result["state"],"verification_sha256":result["verification_sha256"]}); return result
