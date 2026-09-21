@@ -76,7 +76,7 @@ class IndependentVerifier:
                     actual, ok = None, False
                 evidence_ok = evidence_ok and ok
                 checks.append({"check":f"evidence_{eid}_integrity","passed":ok,"expected":expected_hash,"observed":actual})
-                if kind == "execution" and ok:
+                if kind == "execution":
                     try:
                         data=json.loads(p.read_text(encoding="utf-8"))
                         recomputed=_execution_id(data)
