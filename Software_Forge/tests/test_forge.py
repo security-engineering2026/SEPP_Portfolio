@@ -157,3 +157,43 @@ def test_verifier_detects_forged_failure_attempt_event(tmp_path):
     verification=e.verify()
     assert verification["state"]=="FAILED"
     assert any(c["check"]=="failure_attempt_1_binding" and not c["passed"] for c in verification["checks"])
+
+
+def test_checkpoint_restore_round_trip(tmp_path):
+    copy_manifest(tmp_path)
+    target=tmp_path/"app.py"; target.write_text("version = 'one'\n",encoding="utf-8")
+    e=ForgeEngine(tmp_path)
+    checkpoint=e.checkpoint("before-change")
+    target.write_text("version = 'two'\n",encoding="utf-8")
+    result=e.restore_checkpoint(checkpoint["checkpoint_id"])
+    assert result["state"]=="RESTORED"
+    assert target.read_text(encoding="utf-8")=="version = 'one'\n"
+
+def test_checkpoint_detects_metadata_tamper(tmp_path):
+    copy_manifest(tmp_path)
+    e=ForgeEngine(tmp_path)
+    checkpoint=e.checkpoint("tamper")
+    p=tmp_path/".forge/checkpoints"/checkpoint["checkpoint_id"]/"checkpoint.json"
+    data=json.loads(p.read_text(encoding="utf-8")); data["tree_sha256"]="0"*64
+    p.write_text(json.dumps(data),encoding="utf-8")
+    try:
+        e.restore_checkpoint(checkpoint["checkpoint_id"])
+    except ValueError as exc:
+        assert "integrity" in str(exc)
+    else:
+        assert False, "tampered checkpoint metadata must be rejected"
+
+def test_checkpoint_rejects_archive_path_traversal(tmp_path):
+    copy_manifest(tmp_path)
+    e=ForgeEngine(tmp_path)
+    checkpoint=e.checkpoint("archive")
+    import zipfile
+    archive=tmp_path/".forge/checkpoints"/checkpoint["checkpoint_id"]/"source.zip"
+    with zipfile.ZipFile(archive,"a") as z:
+        z.writestr("../escape.txt","forged")
+    try:
+        e.restore_checkpoint(checkpoint["checkpoint_id"])
+    except ValueError as exc:
+        assert "unsafe checkpoint archive path" in str(exc)
+    else:
+        assert False, "unsafe archive path must be rejected"
