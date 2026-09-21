@@ -76,9 +76,12 @@ class ManifestEngine:
         required_offline={"local_build","local_test","local_static_analysis","local_runtime","local_evidence","local_git","local_recovery","local_failure_diagnosis","local_repair","local_regression","local_independent_verification","local_product_intelligence","local_search_index","knowledge_pack_import","knowledge_pack_export","dependency_cache","toolchain_cache","documentation_cache","package_registry_cache","platform_image_cache","offline_external_discovery"}
         if not isinstance(offline,dict) or not required_offline.issubset(offline): errors.append("offline_capability_contract_incomplete")
         evolution=data.get("manifest_evolution") if isinstance(data,dict) else None
-        if data.get("forge_manifest_version") == "1.3":
+        if major == 1 and minor >= 3:
             required_evolution={"proposal_engine","structured_diff","explicit_user_instruction","approval_ledger","versioned_change","requirement_delta","impact_analysis","affected_test_detection","validation_after_change","independent_verification_after_change","silent_change_forbidden","requirement_weakening_requires_explicit_approval","removal_requires_explicit_approval","stale_manifest_rejection","immutable_proposal_hash","rollback_or_rejection"}
             if not isinstance(evolution,dict) or not required_evolution.issubset(evolution): errors.append("manifest_evolution_contract_incomplete")
+        acceleration=data.get("execution_acceleration")
+        required_acceleration={"enabled","work_decomposition","dependency_graph","parallel_work_scheduling","fast_gate","incremental_test_selection","failure_queue","automatic_retry_and_repair","checkpoint_resume","batch_operations","consolidated_integration_gate","quality_gate_preservation","full_regression_after_integration","independent_verification_after_integration","release_gate_bypass_forbidden","parallel_execution_must_not_weaken_quality","resource_limits"}
+        if not isinstance(acceleration,dict) or not required_acceleration.issubset(acceleration): errors.append("execution_acceleration_contract_incomplete")
         pre=data.get("online_preprovisioning")
         required_pre={"readiness_scan","dependency_inventory","toolchain_inventory","required_runtime_inventory","required_sdk_inventory","package_cache_warmup","browser_runtime_warmup","platform_image_warmup","documentation_cache_warmup","knowledge_pack_warmup","offline_readiness_score","missing_capability_report","scheduled_refresh","integrity_verification","resumable_downloads","content_addressed_storage","version_pinning","license_policy_check","storage_budget"}
         if not isinstance(pre,dict) or not required_pre.issubset(pre): errors.append("online_preprovisioning_contract_incomplete")
