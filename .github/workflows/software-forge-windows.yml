@@ -35,6 +35,10 @@ jobs:
         shell: pwsh
         working-directory: Software_Forge
         run: python -m pytest -q
+      - name: Forge execution smoke
+        shell: pwsh
+        working-directory: Software_Forge
+        run: python -m forge execute python -c "print('forge-execution-ok')"
       - name: Live Windows runtime smoke
         shell: pwsh
         working-directory: Software_Forge
