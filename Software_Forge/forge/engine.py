@@ -37,7 +37,10 @@ class ForgeEngine:
     def analyze_failure(self, observation):
         result=FailureAnalyzer(self.root).analyze(observation)
         self.store.evidence("failure_analysis",self.root/".forge/failure.json","TESTED")
-        self.store.event("failure_analysis",{"state":result["state"],"category":result["category"]})
+        self.store.event("failure_analysis",{"state":result["state"],"category":result["category"],"failure_id":result.get("failure_id")})
+        if result.get("failure_id"):
+            self.store.failure_attempt(result["failure_id"], "deterministic_failure_analysis", "ANALYZED",
+                                       {"category":result["category"],"confidence":result["confidence"]})
         return result
     def verify(self):
         result=IndependentVerifier(self.root).verify(); self.store.event("independent_verification",{"state":result["state"],"verification_sha256":result["verification_sha256"]}); return result
