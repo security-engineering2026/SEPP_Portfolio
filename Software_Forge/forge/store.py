@@ -16,18 +16,25 @@ class ForgeStore:
         p=Path(path); h=digest(p.read_bytes()); self.db.execute("INSERT INTO evidence(ts,kind,path,sha256,state) VALUES(?,?,?,?,?)",(time.time(),kind,str(p),h,state)); self.db.commit(); return h
     def failure_attempt(self, failure_id, strategy, status, details=None):
         payload = details if isinstance(details, dict) else {"details": details}
+        details_json = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         self.db.execute("INSERT INTO failure_attempts(ts,failure_id,strategy,status,details) VALUES(?,?,?,?,?)",
-                        (time.time(), str(failure_id), str(strategy), str(status), json.dumps(payload, sort_keys=True)))
+                        (time.time(), str(failure_id), str(strategy), str(status), details_json))
         self.db.commit()
-        return self.db.execute("SELECT last_insert_rowid()").fetchone()[0]
-
+        attempt_id = self.db.execute("SELECT last_insert_rowid()").fetchone()[0]
+        self.event("failure_attempt", {
+            "attempt_id": attempt_id,
+            "failure_id": str(failure_id),
+            "strategy": str(strategy),
+            "status": str(status),
+            "details_sha256": digest(details_json.encode()),
+        })
+        return attempt_id
     def failure_attempts(self, failure_id=None):
         if failure_id is None:
             rows = self.db.execute("SELECT id,ts,failure_id,strategy,status,details FROM failure_attempts ORDER BY id").fetchall()
         else:
             rows = self.db.execute("SELECT id,ts,failure_id,strategy,status,details FROM failure_attempts WHERE failure_id=? ORDER BY id", (str(failure_id),)).fetchall()
         return [{"id":r[0],"timestamp":r[1],"failure_id":r[2],"strategy":r[3],"status":r[4],"details":json.loads(r[5])} for r in rows]
-
     def verify_event_chain(self):
         rows=self.db.execute("SELECT id,kind,payload,sha256 FROM events ORDER BY id").fetchall()
         previous=""
