@@ -53,19 +53,10 @@ class IndependentVerifier:
 
     def verify(self) -> dict:
         checks = []
-        manifest_candidates = (
-            self.root / "SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.yaml",
-            self.root / "FORGE_MANIFEST.yaml",
-            self.root / "Software_Forge" / "SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.yaml",
-            self.root / "Software_Forge" / "FORGE_MANIFEST.yaml",
-            self.root.parent / "SOFTWARE_FORGE_MASTER_MANIFEST_v1.0.yaml",
-        )
-        manifest_path = next((p for p in manifest_candidates if p.exists()), None)
-        if manifest_path is None:
-            checks.append({"check":"manifest_present","passed":False,"reason":"manifest not found"})
-            return self._write(checks, "BLOCKED")
         try:
+            manifest_path = ManifestEngine(self.root).path
             snap = ManifestEngine(self.root).snapshot()
+            checks.append({"check":"manifest_present","passed":manifest_path.exists(),"path":str(manifest_path)})
             checks.append({"check":"manifest_recomputed","passed":snap["manifest"]["state"] == "VERIFIED"})
         except Exception as exc:
             checks.append({"check":"manifest_recomputed","passed":False,"reason":str(exc)})
